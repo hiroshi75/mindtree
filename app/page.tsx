@@ -1,7 +1,10 @@
+"use client";
+
 import { TreeNode } from "./components/TreeNode";
 import { TreeNode as TreeNodeType } from "./types/node";
+import { useState } from "react";
 
-const sampleData: TreeNodeType = {
+const initialData: TreeNodeType = {
   id: "1",
   text: "プロジェクト計画",
   children: [
@@ -53,9 +56,28 @@ const sampleData: TreeNodeType = {
 };
 
 export default function Home() {
+  const [treeData, setTreeData] = useState<TreeNodeType>(initialData);
+
+  const handleUpdateNode = (id: string, newText: string) => {
+    const updateNodeById = (node: TreeNodeType): TreeNodeType => {
+      if (node.id === id) {
+        return { ...node, text: newText };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: node.children.map(updateNodeById)
+        };
+      }
+      return node;
+    };
+
+    setTreeData(prevData => updateNodeById(prevData));
+  };
+
   return (
     <div className="p-4">
-      <TreeNode node={sampleData} />
+      <TreeNode node={treeData} onUpdate={handleUpdateNode} />
     </div>
   );
 }
