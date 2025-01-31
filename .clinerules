@@ -17,3 +17,10 @@ TODO、進捗管理: docs/TODO.md
 ## shadcn/uiの使い方
 初期化 `npx shadcn@latest init -d`
 必要なコンポーネントのインストール  `npx shadcn@latest add button`
+
+## バージョン管理
+
+作業をするためにgithubを使っています。
+新規にまとまった機能追加をする場合はブランチを作ってください。
+作業がある程度進んだらcommitし、時々pushもしてください。
+1機能の開発が済んだらPRを作成してください。
