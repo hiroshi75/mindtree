@@ -1,0 +1,19 @@
+## 以下のファイルは読まないでください
+
+.env
+
+
+## 必要に応じて以下のファイルを参考にしてください。
+
+全体の仕様: docs/SPECIFICATION.md
+LLMの使い方: docs/SPECIFICATION.md
+TODO、進捗管理: docs/TODO.md
+
+## ターミナルを使う場合の注意
+
+- 開発はmacosで行なっています
+- 環境変数ファイル .env を適用してください。 `eval $(dotenv .env)`
+
+## shadcn/uiの使い方
+初期化 `npx shadcn@latest init -d`
+必要なコンポーネントのインストール  `npx shadcn@latest add button`
