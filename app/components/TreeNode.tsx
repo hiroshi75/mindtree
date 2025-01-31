@@ -3,7 +3,7 @@
 import { TreeNode as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
 
 interface TreeNodeProps {
   node: TreeNodeType;
@@ -151,10 +151,14 @@ export function TreeNode({
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="w-6 h-6 flex items-center justify-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             aria-label={isExpanded ? "折りたたむ" : "展開する"}
           >
-            {isExpanded ? "▼" : "▶"}
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </button>
         )}
         {!hasChildren && <div className="w-6" />}
@@ -204,20 +208,22 @@ export function TreeNode({
           </Card>
         </div>
       </div>
-      {isExpanded && node.children?.map((child) => (
-        <TreeNode
-          key={child.id}
-          node={child}
-          level={level + 1}
-          onUpdate={onUpdate}
-          onAddSibling={onAddSibling}
-          onAddChild={onAddChild}
-          onSelect={onSelect}
-          onDelete={onDelete}
-          selectedNodeId={selectedNodeId}
-          isSelected={child.id === selectedNodeId}
-        />
-      ))}
+      <div className={`overflow-hidden transition-all duration-200 ease-in-out ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        {node.children?.map((child) => (
+          <TreeNode
+            key={child.id}
+            node={child}
+            level={level + 1}
+            onUpdate={onUpdate}
+            onAddSibling={onAddSibling}
+            onAddChild={onAddChild}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            selectedNodeId={selectedNodeId}
+            isSelected={child.id === selectedNodeId}
+          />
+        ))}
+      </div>
     </div>
   );
 }
