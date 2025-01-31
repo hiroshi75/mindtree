@@ -3,6 +3,8 @@
 import { TreeNode } from "./components/TreeNode";
 import { TreeNode as TreeNodeType } from "./types/node";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const initialData: TreeNodeType = {
   id: "1",
@@ -58,6 +60,8 @@ const initialData: TreeNodeType = {
 export default function Home() {
   const [treeData, setTreeData] = useState<TreeNodeType>(initialData);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
 
   const handleSelectNode = (id: string) => {
     setSelectedNodeId(id);
@@ -127,6 +131,37 @@ export default function Home() {
     setSelectedNodeId(newId);
   };
 
+  const handleDeleteNode = (id: string) => {
+    const deleteNodeById = (node: TreeNodeType): TreeNodeType | null => {
+      if (node.id === id) {
+        return null;
+      }
+      if (node.children) {
+        const newChildren = node.children
+          .map(deleteNodeById)
+          .filter((child): child is TreeNodeType => child !== null);
+        return {
+          ...node,
+          children: newChildren
+        };
+      }
+      return node;
+    };
+
+    setTreeData(prevData => {
+      const result = deleteNodeById(prevData);
+      return result || initialData; // ルートノードが削除された場合は初期データに戻す
+    });
+    setSelectedNodeId(null);
+    setNodeToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteRequest = (id: string) => {
+    setNodeToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
   return (
     <div className="p-4">
       <TreeNode
@@ -135,9 +170,29 @@ export default function Home() {
         onSelect={handleSelectNode}
         onAddChild={handleAddChild}
         onAddSibling={handleAddSibling}
+        onDelete={handleDeleteRequest}
         isSelected={treeData.id === selectedNodeId}
         selectedNodeId={selectedNodeId}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ノードの削除</DialogTitle>
+            <DialogDescription>
+              このノードと、すべての子ノードが削除されます。この操作は取り消せません。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button variant="destructive" onClick={() => nodeToDelete && handleDeleteNode(nodeToDelete)}>
+              削除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
