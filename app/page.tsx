@@ -1,5 +1,6 @@
 "use client";
 
+import { Header } from "./components/Header";
 import { TreeNode } from "./components/TreeNode";
 import { TreeNode as TreeNodeType } from "./types/node";
 import { useState } from "react";
@@ -163,36 +164,39 @@ export default function Home() {
   };
 
   return (
-    <div className="p-4">
-      <TreeNode
-        node={treeData}
-        onUpdate={handleUpdateNode}
-        onSelect={handleSelectNode}
-        onAddChild={handleAddChild}
-        onAddSibling={handleAddSibling}
-        onDelete={handleDeleteRequest}
-        isSelected={treeData.id === selectedNodeId}
-        selectedNodeId={selectedNodeId}
-      />
+    <div>
+      <Header treeData={treeData} onImport={setTreeData} />
+      <div className="p-4">
+        <TreeNode
+          node={treeData}
+          onUpdate={handleUpdateNode}
+          onSelect={handleSelectNode}
+          onAddChild={handleAddChild}
+          onAddSibling={handleAddSibling}
+          onDelete={handleDeleteRequest}
+          isSelected={treeData.id === selectedNodeId}
+          selectedNodeId={selectedNodeId}
+        />
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>ノードの削除</DialogTitle>
-            <DialogDescription>
-              このノードと、すべての子ノードが削除されます。この操作は取り消せません。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              キャンセル
-            </Button>
-            <Button variant="destructive" onClick={() => nodeToDelete && handleDeleteNode(nodeToDelete)}>
-              削除
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>ノードの削除</DialogTitle>
+              <DialogDescription>
+                このノードと、すべての子ノードが削除されます。この操作は取り消せません。
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                キャンセル
+              </Button>
+              <Button variant="destructive" onClick={() => nodeToDelete && handleDeleteNode(nodeToDelete)}>
+                削除
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
