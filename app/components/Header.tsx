@@ -2,12 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Menu } from "lucide-react";
-import { TreeNode } from "../types/node";
+import { Node } from "../types/node";
 import { useState, useRef } from "react";
 
 interface HeaderProps {
-  treeData: TreeNode;
-  onImport: (data: TreeNode) => void;
+  treeData: Node;
+  onImport: (data: Node) => void;
 }
 
 export function Header({ treeData, onImport }: HeaderProps) {
@@ -39,7 +39,7 @@ export function Header({ treeData, onImport }: HeaderProps) {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const data = JSON.parse(content) as TreeNode;
+        const data = JSON.parse(content) as Node;
 
         // 基本的な検証
         if (!data.id || typeof data.text !== "string") {

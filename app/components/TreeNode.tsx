@@ -1,6 +1,6 @@
 "use client";
 
-import { TreeNode as TreeNodeType } from "../types/node";
+import { Node as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
@@ -164,9 +164,9 @@ export function TreeNode({
         {!hasChildren && <div className="w-6" />}
         <div className={`w-full rounded-lg transition-shadow ${isSelected ? "ring-2 ring-primary ring-offset-2" : ""}`}>
           <Card
-            className={`p-3 w-full hover:bg-accent cursor-pointer transition-colors group ${node.color ? "bg-opacity-10" : ""
+            className={`p-3 w-full hover:bg-accent cursor-pointer transition-colors group ${node.backgroundColor ? "bg-opacity-10" : ""
               }`}
-            style={{ backgroundColor: node.color }}
+            style={{ backgroundColor: node.backgroundColor }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
