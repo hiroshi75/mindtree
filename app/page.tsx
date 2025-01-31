@@ -57,6 +57,11 @@ const initialData: TreeNodeType = {
 
 export default function Home() {
   const [treeData, setTreeData] = useState<TreeNodeType>(initialData);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  const handleSelectNode = (id: string) => {
+    setSelectedNodeId(id);
+  };
 
   const handleUpdateNode = (id: string, newText: string) => {
     const updateNodeById = (node: TreeNodeType): TreeNodeType => {
@@ -75,9 +80,64 @@ export default function Home() {
     setTreeData(prevData => updateNodeById(prevData));
   };
 
+  const handleAddChild = (parentId: string) => {
+    const newId = Date.now().toString();
+    const addChildById = (node: TreeNodeType): TreeNodeType => {
+      if (node.id === parentId) {
+        return {
+          ...node,
+          children: [
+            ...(node.children || []),
+            { id: newId, text: "" }
+          ]
+        };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: node.children.map(addChildById)
+        };
+      }
+      return node;
+    };
+
+    setTreeData(prevData => addChildById(prevData));
+    setSelectedNodeId(newId);
+  };
+
+  const handleAddSibling = (siblingId: string) => {
+    const newId = Date.now().toString();
+    const addSiblingById = (node: TreeNodeType): TreeNodeType => {
+      if (node.children) {
+        const siblingIndex = node.children.findIndex(child => child.id === siblingId);
+        if (siblingIndex !== -1) {
+          const newChildren = [...node.children];
+          newChildren.splice(siblingIndex + 1, 0, { id: newId, text: "" });
+          return { ...node, children: newChildren };
+        }
+        return {
+          ...node,
+          children: node.children.map(addSiblingById)
+        };
+      }
+      return node;
+    };
+
+    setTreeData(prevData => addSiblingById(prevData));
+    setSelectedNodeId(newId);
+  };
+
   return (
     <div className="p-4">
-      <TreeNode node={treeData} onUpdate={handleUpdateNode} />
+      <TreeNode
+        node={treeData}
+        onUpdate={handleUpdateNode}
+        onSelect={handleSelectNode}
+        onAddChild={handleAddChild}
+        onAddSibling={handleAddSibling}
+        isSelected={treeData.id === selectedNodeId}
+        selectedNodeId={selectedNodeId}
+      />
     </div>
   );
 }
