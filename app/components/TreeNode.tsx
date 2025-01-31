@@ -3,6 +3,7 @@
 import { TreeNode as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
+import { Trash2 } from "lucide-react";
 
 interface TreeNodeProps {
   node: TreeNodeType;
@@ -13,6 +14,7 @@ interface TreeNodeProps {
   onAddSibling?: (id: string) => void;
   onAddChild?: (id: string) => void;
   onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function TreeNode({
@@ -23,11 +25,13 @@ export function TreeNode({
   onUpdate,
   onAddSibling,
   onAddChild,
-  onSelect
+  onSelect,
+  onDelete
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
+  const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
   const hasChildren = node.children && node.children.length > 0;
@@ -56,7 +60,12 @@ export function TreeNode({
     // 選択状態でのみキーボードイベントを処理
     if (!isSelected) return;
 
-    if (e.key === 'Enter') {
+    if (e.key === 'Delete' && onDelete) {
+      e.preventDefault();
+      e.stopPropagation();
+      onDelete(node.id);
+    }
+    else if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
 
@@ -151,9 +160,11 @@ export function TreeNode({
         {!hasChildren && <div className="w-6" />}
         <div className={`w-full rounded-lg transition-shadow ${isSelected ? "ring-2 ring-primary ring-offset-2" : ""}`}>
           <Card
-            className={`p-3 w-full hover:bg-accent cursor-pointer transition-colors ${node.color ? "bg-opacity-10" : ""
+            className={`p-3 w-full hover:bg-accent cursor-pointer transition-colors group ${node.color ? "bg-opacity-10" : ""
               }`}
             style={{ backgroundColor: node.color }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
             {isEditing ? (
               <input
@@ -170,12 +181,25 @@ export function TreeNode({
                 autoFocus
               />
             ) : (
-              <span
-                onClick={handleTextClick}
-                className="cursor-text"
-              >
-                {node.text}
-              </span>
+              <div className="flex items-center justify-between">
+                <span
+                  onClick={handleTextClick}
+                  className="cursor-text"
+                >
+                  {node.text}
+                </span>
+                {isHovered && !isEditing && (
+                  <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Trash2
+                      className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete?.(node.id);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </Card>
         </div>
@@ -189,6 +213,7 @@ export function TreeNode({
           onAddSibling={onAddSibling}
           onAddChild={onAddChild}
           onSelect={onSelect}
+          onDelete={onDelete}
           selectedNodeId={selectedNodeId}
           isSelected={child.id === selectedNodeId}
         />
