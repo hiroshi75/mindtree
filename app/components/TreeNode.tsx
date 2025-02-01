@@ -8,6 +8,7 @@ import { updateNodeText } from "@/app/actions/tree";
 
 interface TreeNodeProps {
   node: TreeNodeType;
+  treeData: TreeNodeType;
   level?: number;
   isSelected?: boolean;
   selectedNodeId?: string | null;
@@ -21,6 +22,7 @@ interface TreeNodeProps {
 
 export function TreeNode({
   node,
+  treeData,
   level = 0,
   isSelected = false,
   selectedNodeId = null,
@@ -31,12 +33,12 @@ export function TreeNode({
   onDelete,
   onMove
 }: TreeNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(node.isExpanded);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(node.text);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDragOver, setIsDragOver] = useState<'before' | 'after' | 'inside' | null>(null);
+  const [isExpanded, setIsExpanded] = useState<boolean>(() => node.isExpanded || false);
+  const [isEditing, setIsEditing] = useState<boolean>(() => false);
+  const [editText, setEditText] = useState<string>(() => node.text);
+  const [isHovered, setIsHovered] = useState<boolean>(() => false);
+  const [isDragging, setIsDragging] = useState<boolean>(() => false);
+  const [isDragOver, setIsDragOver] = useState<'before' | 'after' | 'inside' | null>(() => null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -45,7 +47,7 @@ export function TreeNode({
 
   // isExpandedの更新
   React.useEffect(function useUpdateExpanded() {
-    setIsExpanded(node.isExpanded);
+    setIsExpanded(node.isExpanded || false);
   }, [node.isExpanded]);
 
   // ドラッグ&ドロップ中のスクロール処理
@@ -150,17 +152,30 @@ export function TreeNode({
 
   // ドロップ位置のバリデーション
   const validateDrop = (sourceId: string, targetId: string): boolean => {
+    // 自分自身へのドロップを防ぐ
+    if (sourceId === targetId) return false;
+
     // 自分自身の子孫ノードへのドロップを防ぐ
     const isDescendant = (parent: TreeNodeType, childId: string): boolean => {
       if (parent.id === childId) return true;
       return parent.children?.some(child => isDescendant(child, childId)) || false;
     };
 
-    // 自分自身へのドロップを防ぐ
-    if (sourceId === targetId) return false;
+    // 移動元ノードを見つける
+    const findSourceNode = (root: TreeNodeType): TreeNodeType | null => {
+      if (root.id === sourceId) return root;
+      if (root.children) {
+        for (const child of root.children) {
+          const found = findSourceNode(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
 
-    // 自分の子孫ノードへのドロップを防ぐ
-    if (node.children?.some(child => isDescendant(child, sourceId))) {
+    // 移動先ノードが移動元の子孫でないかチェック
+    const sourceNode = findSourceNode(treeData);
+    if (sourceNode && isDescendant(sourceNode, targetId)) {
       return false;
     }
 
@@ -353,6 +368,7 @@ export function TreeNode({
           <TreeNode
             key={child.id}
             node={child}
+            treeData={treeData}
             level={level + 1}
             onUpdate={onUpdate}
             onAddSibling={onAddSibling}
