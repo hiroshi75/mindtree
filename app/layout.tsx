@@ -35,14 +35,8 @@ export default function RootLayout({
             </div>
           </div>
         </header>
-        <main className="flex-1 container mx-auto px-4 py-6 flex">
-          <div className="flex-1">
-            {/* メインエリア */}
-            {children}
-          </div>
-          <div className="w-80 ml-6 border-l pl-6">
-            {/* 専用パネル（LLM） */}
-          </div>
+        <main className="flex-1 container mx-auto px-4 py-6">
+          {children}
         </main>
       </body>
     </html>
