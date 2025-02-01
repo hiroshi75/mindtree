@@ -9,7 +9,7 @@ export interface TreeNodeProps {
   onUpdate?: (id: string, text: string) => void;
   onAddSibling?: (id: string) => void;
   onAddChild?: (id: string) => void;
-  onSelect?: (id: string) => void;
+  onSelect?: (id: string | null) => void;
   onDelete?: (id: string) => void;
   onMove?: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
   searchResults?: string[];

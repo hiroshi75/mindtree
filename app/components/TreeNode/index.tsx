@@ -24,7 +24,6 @@ export function TreeNode({
     setIsExpanded,
     isEditing,
     editText,
-    isHovered,
     isDragging,
     isDragOver,
     inputRef,
@@ -98,8 +97,6 @@ export function TreeNode({
           <NodeContent
             text={node.text}
             isEditing={isEditing}
-            isSelected={isSelected}
-            isHovered={isHovered}
             backgroundColor={node.backgroundColor}
             editText={editText}
             nodeId={node.id}

@@ -5,8 +5,6 @@ import { ColorPicker } from "./ColorPicker";
 interface NodeContentProps {
   text: string;
   isEditing: boolean;
-  isSelected: boolean;
-  isHovered: boolean;
   backgroundColor: string | null | undefined;
   editText: string;
   nodeId: string;
@@ -22,8 +20,6 @@ interface NodeContentProps {
 export function NodeContent({
   text,
   isEditing,
-  isSelected,
-  isHovered,
   backgroundColor,
   editText,
   nodeId,
@@ -37,8 +33,8 @@ export function NodeContent({
 }: NodeContentProps) {
   return (
     <Card
-      className={`p-3 w-full hover:bg-accent/50 cursor-pointer transition-colors group ${backgroundColor ? "bg-opacity-10" : ""
-        } ${isSelected ? "hover:bg-accent/30" : ""}`}
+      className={`p-3 w-full hover:bg-accent/50 transition-colors group ${backgroundColor ? "bg-opacity-10" : ""
+        }`}
       style={{
         backgroundColor: searchResults?.includes(nodeId)
           ? '#fef9c3'
@@ -56,7 +52,7 @@ export function NodeContent({
             className="flex-1 bg-transparent outline-none"
             autoFocus
           />
-          <div className="ml-2 flex items-center gap-2">
+          <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
             <ColorPicker
               nodeId={nodeId}
               backgroundColor={backgroundColor}
@@ -78,26 +74,24 @@ export function NodeContent({
               e.stopPropagation();
               onTextClick(e);
             }}
-            className="cursor-text"
+            className="cursor-text relative z-10"
           >
             {text}
           </span>
-          {(isHovered || isSelected || isEditing) && (
-            <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
-              <ColorPicker
-                nodeId={nodeId}
-                backgroundColor={backgroundColor}
-                onColorChange={onColorChange}
-              />
-              <Trash2
-                className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete?.(nodeId);
-                }}
-              />
-            </div>
-          )}
+          <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
+            <ColorPicker
+              nodeId={nodeId}
+              backgroundColor={backgroundColor}
+              onColorChange={onColorChange}
+            />
+            <Trash2
+              className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(nodeId);
+              }}
+            />
+          </div>
         </div>
       )}
     </Card>

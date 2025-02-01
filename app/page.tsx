@@ -2,6 +2,7 @@
 
 import { Header } from "./components/Header";
 import { TreeNode } from "./components/TreeNode";
+import { LLMPanel } from "./components/LLMPanel";
 import { Node } from "./types/node";
 import { useState, useEffect, useCallback } from "react";
 import { useHistoryStore } from "./store/history";
@@ -579,21 +580,40 @@ export default function Home() {
           setSearchResults(results);
         }}
       />
-      <div className="p-4">
-        <TreeNode
-          node={treeData}
-          treeData={treeData}
-          onUpdate={handleUpdateNode}
-          onSelect={handleSelectNode}
-          onAddChild={handleAddChild}
-          onAddSibling={handleAddSibling}
-          onDelete={handleDeleteRequest}
-          onMove={handleMoveNode}
-          isSelected={treeData.id === selectedNodeId}
-          selectedNodeId={selectedNodeId}
-          searchResults={searchResults}
-          onColorChange={handleColorChange}
-        />
+      <div className="flex">
+        <div className="flex-1 p-4">
+          <TreeNode
+            node={treeData}
+            treeData={treeData}
+            onUpdate={handleUpdateNode}
+            onSelect={handleSelectNode}
+            onAddChild={handleAddChild}
+            onAddSibling={handleAddSibling}
+            onDelete={handleDeleteRequest}
+            onMove={handleMoveNode}
+            isSelected={treeData.id === selectedNodeId}
+            selectedNodeId={selectedNodeId}
+            searchResults={searchResults}
+            onColorChange={handleColorChange}
+          />
+        </div>
+        <div className="w-96 p-4 border-l">
+          <LLMPanel
+            onGenerateNodes={(nodes) => {
+              if (selectedNodeId) {
+                let delay = 0;
+                nodes.forEach((nodeText) => {
+                  setTimeout(() => {
+                    const newId = Date.now().toString();
+                    handleAddChild(selectedNodeId);
+                    handleUpdateNode(newId, nodeText);
+                  }, delay);
+                  delay += 100; // 各ノードの生成に100msの遅延を追加
+                });
+              }
+            }}
+          />
+        </div>
 
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>

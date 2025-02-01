@@ -1,5 +1,7 @@
 ## Basic
 
+ANTHROPIC_API_KEYという環境変数にAnthropicのAPIキーが設定されています。
+
 ```shell
 npm i @langchain/anthropic @langchain/core
 ```
@@ -8,6 +10,7 @@ npm i @langchain/anthropic @langchain/core
 import { ChatAnthropic } from "@langchain/anthropic";
 
 const llm = new ChatAnthropic({
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   model: "claude-3-haiku-20240307",
   temperature: 0,
   maxTokens: undefined,

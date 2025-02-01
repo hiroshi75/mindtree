@@ -60,19 +60,30 @@ export const createKeyboardHandlers = (
     }, 500);
   };
 
+  // 編集内容を保存する関数
+  const saveEdit = (text: string) => {
+    const trimmedText = text.trim();
+    const hasChanged = trimmedText !== nodeText;
+
+    if (trimmedText && onUpdate && hasChanged) {
+      onUpdate(nodeId, trimmedText);
+    }
+    setIsEditing(false);
+    return hasChanged;
+  };
+
   const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tabキーでフォーカスが移動する前に保存
+    if (e.key === 'Tab') {
+      saveEdit(e.currentTarget.value);
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
 
-      const trimmedEditText = e.currentTarget.value.trim();
-      const hasChanged = trimmedEditText !== nodeText;
-
-      if (trimmedEditText && onUpdate && hasChanged) {
-        onUpdate(nodeId, trimmedEditText);
-      }
-
-      setIsEditing(false);
+      const hasChanged = saveEdit(e.currentTarget.value);
 
       if (e.ctrlKey && onAddChild) {
         onAddChild(nodeId);
