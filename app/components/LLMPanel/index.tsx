@@ -4,14 +4,16 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { generateNodes } from "@/app/actions/llm";
+import { Node } from "@/app/types/node";
 
 interface LLMPanelProps {
   onNodesGenerated?: (nodes: string[]) => void;
   selectedNodeId: string | null;
   selectedNodeText?: string;
+  treeData?: Node;
 }
 
-export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText }: LLMPanelProps) {
+export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, treeData }: LLMPanelProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -25,8 +27,9 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText }:
       setIsGenerating(true);
       const result = await generateNodes({
         prompt,
-        model: "claude-3-haiku-20240307",
         count,
+        treeData,
+        selectedNodeId,
       });
       setPreview(result.nodes);
     } catch (error) {
