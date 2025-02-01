@@ -620,6 +620,7 @@ export default function Home() {
           <LLMPanel
             selectedNodeId={selectedNodeId}
             selectedNodeText={selectedNodeId ? findNodeById(treeData, selectedNodeId)?.text : undefined}
+            treeData={treeData}
             onNodesGenerated={(nodes: string[]) => {
               if (selectedNodeId) {
                 // 生成された各ノードを選択中のノードの子として追加
