@@ -2,7 +2,7 @@ import { Node as TreeNodeType } from "./node";
 
 export interface TreeNodeProps {
   node: TreeNodeType;
-  treeData?: TreeNodeType;
+  treeData: TreeNodeType;
   level?: number;
   isSelected?: boolean;
   selectedNodeId?: string | null;
