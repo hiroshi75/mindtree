@@ -3,7 +3,7 @@ export interface Node {
   text: string;
   children?: Node[];
   isExpanded: boolean;
-  backgroundColor?: string;
+  backgroundColor?: string | null;
 }
 
 export interface DbNode {
