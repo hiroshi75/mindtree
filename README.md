@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MindTree（マインドツリー）
 
-## Getting Started
+MindTreeは、ブラウザ上で動作するマインドマップ作成支援Webアプリケーションです。マインドマップをインデントされた箇条書きツリー形式で表現することで、直感的な操作性を提供します。
 
-First, run the development server:
+このアプリケーションは[Cline](https://github.com/saoudrizwan/cline)を使用して開発されました。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 主な機能
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🌳 マインドマップ作成・編集
+- キーボードショートカットによる素早いノードの追加・編集
+- ドラッグ&ドロップによる直感的なノードの移動
+- ノードの色付けによる視覚的な情報整理
+- ツリー構造の展開・折りたたみ
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 🤖 LLM（大規模言語モデル）連携
+- LLMによる子ノード自動生成
+- プロンプトのプレビュー機能
+- 複数のLLMに対応
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 💾 データ管理
+- 自動保存機能
+- 複数ツリーの管理
+- JSONフォーマットでのインポート/エクスポート
 
-## Learn More
+### 🔍 その他
+- ノードテキストの検索機能
+- Undo/Redo機能
 
-To learn more about Next.js, take a look at the following resources:
+## スクリーンショット
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+![MindTreeのスクリーンショット](public/screenshot.png)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## インターフェース
 
-## Deploy on Vercel
+アプリケーションは以下の3つの主要な領域で構成されています：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **ヘッダー部分**
+   - アプリケーションタイトル
+   - 検索バー
+   - ツールバー（保存、読み込み、Undo/Redo）
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **メインエリア（左側）**
+   - インデントされた箇条書きツリー形式でマインドマップを表示
+   - ドラッグ&ドロップでノードを移動可能
+   - ノードの展開/折りたたみが可能
+
+3. **LLMパネル（右側）**
+   - プロンプト入力エリア
+   - 詳細設定（LLM選択、生成数など）
+   - プロンプトプレビュー機能
+
+## 技術スタック
+
+- Next.js 15 (App Router)
+- TypeScript
+- shadcn/ui
+- SQLite
+
+## 対象ユーザー
+
+- アイデア出しや企画立案を行うビジネスパーソン
+- 学習内容や情報を整理したい学生
+- 思考を整理したいすべての人
+
+## ショートカットキー
+
+| キー                    | 機能             |
+| ----------------------- | ---------------- |
+| Enter / ↓               | 兄弟ノードを追加 |
+| Ctrl + Enter / Ctrl + ↓ | 子ノードを追加   |
+| Delete                  | ノードを削除     |
+| Ctrl + Z                | 元に戻す         |
+| Ctrl + Y                | やり直す         |
+
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
