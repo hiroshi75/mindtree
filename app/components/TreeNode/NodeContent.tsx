@@ -45,8 +45,8 @@ export function NodeContent({
           : backgroundColor || undefined
       }}
     >
-      {isEditing ? (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        {isEditing ? (
           <input
             ref={inputRef}
             type="text"
@@ -56,7 +56,19 @@ export function NodeContent({
             className="flex-1 bg-transparent outline-none"
             autoFocus
           />
-          <div className="ml-2 flex items-center gap-2">
+        ) : (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              onTextClick(e);
+            }}
+            className="cursor-text"
+          >
+            {text}
+          </span>
+        )}
+        {isHovered && (
+          <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
             <ColorPicker
               nodeId={nodeId}
               backgroundColor={backgroundColor}
@@ -70,36 +82,8 @@ export function NodeContent({
               }}
             />
           </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <span
-            onClick={(e) => {
-              e.stopPropagation();
-              onTextClick(e);
-            }}
-            className="cursor-text"
-          >
-            {text}
-          </span>
-          {(isHovered || isSelected || isEditing) && (
-            <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
-              <ColorPicker
-                nodeId={nodeId}
-                backgroundColor={backgroundColor}
-                onColorChange={onColorChange}
-              />
-              <Trash2
-                className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete?.(nodeId);
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 }
