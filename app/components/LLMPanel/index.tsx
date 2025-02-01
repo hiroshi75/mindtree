@@ -4,7 +4,17 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { generateNodes } from "@/app/actions/llm";
+import { createContextPrompt } from "@/app/utils/treeUtils";
 import { Node } from "@/app/types/node";
+import { Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface LLMPanelProps {
   onNodesGenerated?: (nodes: string[]) => void;
@@ -19,6 +29,7 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
   const [showSettings, setShowSettings] = useState(false);
   const [count, setCount] = useState(3);
   const [preview, setPreview] = useState<string[]>([]);
+  const [promptPreview, setPromptPreview] = useState("");
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -49,9 +60,37 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
 
   return (
     <Card className="p-4 space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-2 relative">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">LLM</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">LLM</h2>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    const contextPrompt = `システムプロンプト:\nあなたはマインドマップの作成を支援するAIアシスタントです。\n与えられたトピックに関連する${count}個のノードを生成してください。\n各ノードは簡潔で具体的な内容にしてください。\n出力は配列形式で、各要素が1つのノードを表します。\n\n${createContextPrompt(treeData, selectedNodeId)}\nユーザーのプロンプト:\n${prompt}`;
+                    setPromptPreview(contextPrompt);
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>プロンプトプレビュー</DialogTitle>
+                  <DialogDescription>
+                    LLMに送信されるプロンプトの内容を確認できます。
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="mt-4 p-4 bg-gray-50 rounded-md whitespace-pre-wrap font-mono text-sm">
+                  {promptPreview}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           {!selectedNodeId && (
             <span className="text-sm text-gray-500">ノードを選択してください</span>
           )}
