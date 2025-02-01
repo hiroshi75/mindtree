@@ -1,8 +1,8 @@
 "use client";
 
+import * as React from "react";
 import { Node as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
-import React, { useState, useRef, KeyboardEvent, DragEvent } from "react";
 import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import { updateNodeText } from "@/app/actions/tree";
 
@@ -33,25 +33,25 @@ export function TreeNode({
   onDelete,
   onMove
 }: TreeNodeProps) {
-  const [isExpanded, setIsExpanded] = useState<boolean>(() => node.isExpanded || false);
-  const [isEditing, setIsEditing] = useState<boolean>(() => false);
-  const [editText, setEditText] = useState<string>(() => node.text);
-  const [isHovered, setIsHovered] = useState<boolean>(() => false);
-  const [isDragging, setIsDragging] = useState<boolean>(() => false);
-  const [isDragOver, setIsDragOver] = useState<'before' | 'after' | 'inside' | null>(() => null);
+  const [isExpanded, setIsExpanded] = React.useState(node.isExpanded);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState(node.text);
+  const [isHovered, setIsHovered] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [isDragOver, setIsDragOver] = React.useState<'before' | 'after' | 'inside' | null>(null);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const nodeRef = useRef<HTMLDivElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const nodeRef = React.useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = React.useRef<null | NodeJS.Timeout>(null);
   const hasChildren = node.children && node.children.length > 0;
 
   // isExpandedの更新
-  React.useEffect(function useUpdateExpanded() {
-    setIsExpanded(node.isExpanded || false);
+  React.useEffect(() => {
+    setIsExpanded(Boolean(node.isExpanded));
   }, [node.isExpanded]);
 
   // ドラッグ&ドロップ中のスクロール処理
-  React.useEffect(function useHandleScroll() {
+  React.useEffect(() => {
     if (isDragOver) {
       const element = nodeRef.current;
       if (element) {
@@ -61,7 +61,7 @@ export function TreeNode({
   }, [isDragOver]);
 
   // 新規ノード作成時の処理
-  React.useEffect(function useHandleNewNode() {
+  React.useEffect(() => {
     if (node.text === '' && isSelected) {
       setIsEditing(true);
       setEditText('');
@@ -73,15 +73,15 @@ export function TreeNode({
   }, [node.text, isSelected, selectedNodeId]);
 
   // 選択状態が変更されたときの処理
-  React.useEffect(function useHandleSelection() {
+  React.useEffect(() => {
     if (isSelected && !isEditing && nodeRef.current && node.text !== '') {
       nodeRef.current.focus();
     }
   }, [isSelected, isEditing, node.text]);
 
   // クリーンアップ
-  React.useEffect(function useCleanup() {
-    return function cleanup() {
+  React.useEffect(() => {
+    return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -89,7 +89,7 @@ export function TreeNode({
   }, []);
 
   // ドラッグ開始時の処理
-  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.stopPropagation();
     setIsDragging(true);
     e.dataTransfer.setData('text/plain', node.id);
@@ -97,14 +97,14 @@ export function TreeNode({
   };
 
   // ドラッグ終了時の処理
-  const handleDragEnd = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
     e.stopPropagation();
     setIsDragging(false);
     setIsDragOver(null);
   };
 
   // ドラッグオーバー時の処理
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -125,14 +125,14 @@ export function TreeNode({
   };
 
   // ドラッグリーブ時の処理
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(null);
   };
 
   // ドロップ時の処理
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -183,7 +183,7 @@ export function TreeNode({
   };
 
   // キーボードイベントハンドラ
-  const handleNodeKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleNodeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // 選択状態でのみキーボードイベントを処理
     if (!isSelected) return;
 
@@ -219,7 +219,9 @@ export function TreeNode({
     // 新しいタイマーをセット（500ms後に保存）
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        await updateNodeText(Number(node.id), text);
+        if (text.trim() !== node.text) {
+          await updateNodeText(Number(node.id), text);
+        }
       } catch (error) {
         console.error('Failed to save node text:', error);
       }
@@ -227,24 +229,36 @@ export function TreeNode({
   };
 
   // 編集モード時のキーボードイベントハンドラ
-  const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
 
-      if (editText.trim() && onUpdate) {
-        onUpdate(node.id, editText);
+      const trimmedEditText = editText.trim();
+      const hasChanged = trimmedEditText !== node.text;
+
+      if (trimmedEditText && onUpdate && hasChanged) {
+        onUpdate(node.id, trimmedEditText);
       }
+
+      // 編集モードを終了
       setIsEditing(false);
 
       // Ctrl+Enter: 子ノード追加
       if (e.ctrlKey && onAddChild) {
         onAddChild(node.id);
       }
-      // Enter: 兄弟ノード追加
-      else if (!e.ctrlKey && onAddSibling) {
+      // Enter: テキストが変更されていない場合のみ兄弟ノード追加
+      else if (!e.ctrlKey && !hasChanged && onAddSibling) {
         onAddSibling(node.id);
       }
+
+      // 選択状態を維持（少し遅延させて確実に反映）
+      setTimeout(() => {
+        if (onSelect) {
+          onSelect(node.id);
+        }
+      }, 0);
     }
     else if (e.key === 'Escape') {
       e.preventDefault();
@@ -333,8 +347,23 @@ export function TreeNode({
                 onChange={(e) => handleTextChange(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={() => {
+                  const trimmedEditText = editText.trim();
+                  const hasChanged = trimmedEditText !== node.text;
+
+                  if (trimmedEditText && onUpdate && hasChanged) {
+                    onUpdate(node.id, trimmedEditText);
+                  } else {
+                    setEditText(node.text);
+                  }
+
                   setIsEditing(false);
-                  setEditText(node.text);
+
+                  // 選択状態を維持（少し遅延させて確実に反映）
+                  setTimeout(() => {
+                    if (onSelect) {
+                      onSelect(node.id);
+                    }
+                  }, 0);
                 }}
                 className="w-full bg-transparent outline-none"
                 autoFocus
