@@ -18,6 +18,7 @@ interface TreeNodeProps {
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMove?: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
+  searchResults?: string[];
 }
 
 export function TreeNode({
@@ -31,7 +32,8 @@ export function TreeNode({
   onAddChild,
   onSelect,
   onDelete,
-  onMove
+  onMove,
+  searchResults
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = React.useState(node.isExpanded);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -335,7 +337,11 @@ export function TreeNode({
           <Card
             className={`p-3 w-full hover:bg-accent cursor-pointer transition-colors group ${node.backgroundColor ? "bg-opacity-10" : ""
               }`}
-            style={{ backgroundColor: node.backgroundColor }}
+            style={{
+              backgroundColor: searchResults?.includes(node.id)
+                ? '#fef9c3' // 黄色のハイライト
+                : node.backgroundColor
+            }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
@@ -407,6 +413,7 @@ export function TreeNode({
             selectedNodeId={selectedNodeId}
             isSelected={child.id === selectedNodeId}
             onMove={onMove}
+            searchResults={searchResults}
           />
         ))}
       </div>
