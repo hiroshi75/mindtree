@@ -1,7 +1,7 @@
 "use client";
 
 import { Header } from "./components/Header";
-import { TreeNode } from "./components/TreeNode";
+import { TreeNode } from "./components/TreeNode/index";
 import { LLMPanel } from "./components/LLMPanel";
 import { Node } from "./types/node";
 import { useState, useEffect, useCallback } from "react";
@@ -161,7 +161,7 @@ export default function Home() {
     }
   };
 
-  const handleSelectNode = (id: string) => {
+  const handleSelectNode = (id: string | null) => {
     setSelectedNodeId(id);
   };
 
@@ -580,7 +580,7 @@ export default function Home() {
           setSearchResults(results);
         }}
       />
-      <div className="flex">
+      <div className="flex items-start">
         <div className="flex-1 p-4">
           <TreeNode
             node={treeData}
@@ -616,7 +616,7 @@ export default function Home() {
             </DialogContent>
           </Dialog>
         </div>
-        <div className="w-80 p-4">
+        <div className="w-64">
           <LLMPanel
             selectedNodeId={selectedNodeId}
             selectedNodeText={selectedNodeId ? findNodeById(treeData, selectedNodeId)?.text : undefined}
