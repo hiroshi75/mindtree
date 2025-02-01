@@ -195,7 +195,7 @@ export default function Home() {
   };
 
   const handleAddChild = (parentId: string) => {
-    const newId = Date.now().toString();
+    const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const parentNode = findNodeById(treeData, parentId);
     if (parentNode) {
       addToHistory({
@@ -231,7 +231,7 @@ export default function Home() {
   };
 
   const handleAddSibling = (siblingId: string) => {
-    const newId = Date.now().toString();
+    const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const parentNode = findParentNode(treeData, siblingId);
     if (parentNode) {
       addToHistory({
@@ -624,8 +624,8 @@ export default function Home() {
             onNodesGenerated={(nodes: string[]) => {
               if (selectedNodeId) {
                 // 生成された各ノードを選択中のノードの子として追加
-                nodes.forEach((nodeText: string) => {
-                  const newId = Date.now().toString();
+                nodes.forEach((nodeText: string, index: number) => {
+                  const newId = `${Date.now()}_${index}`;
                   const parentNode = findNodeById(treeData, selectedNodeId);
                   if (parentNode) {
                     addToHistory({
