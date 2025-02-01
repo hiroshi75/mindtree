@@ -27,10 +27,8 @@ const COLORS = [
 export function ColorPicker({ nodeId, backgroundColor, onColorChange }: ColorPickerProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <div onClick={(e) => e.stopPropagation()}>
-          <Palette className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-        </div>
+      <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
+        <Palette className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem
@@ -42,51 +40,44 @@ export function ColorPicker({ nodeId, backgroundColor, onColorChange }: ColorPic
         >
           色をクリア
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-          }}
-          className="flex items-center gap-2"
-        >
-          <Popover modal={true}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-2 cursor-pointer w-full"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <div className="w-4 h-4 rounded border" style={{ backgroundColor: backgroundColor || 'white' }} />
-                色を選択
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-48"
+        <Popover modal={true}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 cursor-pointer w-full"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
             >
-              <div className="grid grid-cols-5 gap-2">
-                {COLORS.map((color) => (
-                  <div
-                    key={color}
-                    className="w-6 h-6 rounded cursor-pointer hover:ring-2 ring-primary"
-                    style={{ backgroundColor: color }}
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      await updateNodeColor(Number(nodeId), color);
-                      onColorChange?.(nodeId, color);
-                    }}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </DropdownMenuItem>
+              <div className="w-4 h-4 rounded border" style={{ backgroundColor: backgroundColor || 'white' }} />
+              色を選択
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-48"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <div className="grid grid-cols-5 gap-2">
+              {COLORS.map((color) => (
+                <div
+                  key={color}
+                  className="w-6 h-6 rounded cursor-pointer hover:ring-2 ring-primary"
+                  style={{ backgroundColor: color }}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await updateNodeColor(Number(nodeId), color);
+                    onColorChange?.(nodeId, color);
+                  }}
+                />
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </DropdownMenuContent>
     </DropdownMenu>
   );

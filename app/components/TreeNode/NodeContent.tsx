@@ -46,24 +46,43 @@ export function NodeContent({
       }}
     >
       {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={editText}
-          onChange={(e) => onTextChange(e.target.value)}
-          onKeyDown={onEditKeyDown}
-          className="w-full bg-transparent outline-none"
-          autoFocus
-        />
+        <div className="flex items-center justify-between">
+          <input
+            ref={inputRef}
+            type="text"
+            value={editText}
+            onChange={(e) => onTextChange(e.target.value)}
+            onKeyDown={onEditKeyDown}
+            className="flex-1 bg-transparent outline-none"
+            autoFocus
+          />
+          <div className="ml-2 flex items-center gap-2">
+            <ColorPicker
+              nodeId={nodeId}
+              backgroundColor={backgroundColor}
+              onColorChange={onColorChange}
+            />
+            <Trash2
+              className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(nodeId);
+              }}
+            />
+          </div>
+        </div>
       ) : (
         <div className="flex items-center justify-between">
           <span
-            onClick={onTextClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTextClick(e);
+            }}
             className="cursor-text"
           >
             {text}
           </span>
-          {(isHovered || isSelected) && !isEditing && (
+          {(isHovered || isSelected || isEditing) && (
             <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
               <ColorPicker
                 nodeId={nodeId}
