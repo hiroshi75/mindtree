@@ -518,7 +518,6 @@ export default function Home() {
       <Header
         treeData={treeData}
         onImport={setTreeData}
-        currentTreeId={currentTreeId}
         currentTreeName={currentTreeName}
         onTreeSelect={handleTreeSelect}
         onTreeCreate={handleTreeCreate}

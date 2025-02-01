@@ -10,7 +10,6 @@ import { getAllTrees } from "@/app/actions/tree";
 interface HeaderProps {
   treeData: Node;
   onImport: (data: Node) => void;
-  currentTreeId?: number;
   currentTreeName?: string;
   onTreeSelect: (id: number) => void;
   onTreeCreate: (name: string) => void;
@@ -33,7 +32,6 @@ interface Tree {
 export function Header({
   treeData,
   onImport,
-  currentTreeId,
   currentTreeName,
   onTreeSelect,
   onTreeCreate,
@@ -58,11 +56,13 @@ export function Header({
   // キーボードショートカットの設定
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        if (e.shiftKey) {
-          if (canRedo) onRedo();
-        } else {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
           if (canUndo) onUndo();
+        } else if (e.key === 'y') {
+          e.preventDefault();
+          if (canRedo) onRedo();
         }
       }
     };
@@ -235,7 +235,7 @@ export function Header({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>やり直す (Ctrl+Shift+Z)</p>
+              <p>やり直す (Ctrl+Y)</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
