@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Menu, Undo2, Redo2 } from "lucide-react";
 import { Node } from "../types/node";
 import { useState, useRef, useEffect } from "react";
 import { getAllTrees } from "@/app/actions/tree";
@@ -15,6 +16,10 @@ interface HeaderProps {
   onTreeCreate: (name: string) => void;
   onTreeRename: (id: number, name: string) => void;
   onTreeDelete: (id: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 interface Tree {
@@ -33,7 +38,11 @@ export function Header({
   onTreeSelect,
   onTreeCreate,
   onTreeRename,
-  onTreeDelete
+  onTreeDelete,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo
 }: HeaderProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +54,22 @@ export function Header({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [treeToDelete, setTreeToDelete] = useState<number | null>(null);
+
+  // キーボードショートカットの設定
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          if (canRedo) onRedo();
+        } else {
+          if (canUndo) onUndo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, onUndo, onRedo]);
 
   // ツリー一覧を取得
   const fetchTrees = async () => {
@@ -178,7 +203,43 @@ export function Header({
           </span>
         )}
       </div>
-      <div>
+      <div className="flex items-center gap-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+              >
+                <Undo2 className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>元に戻す (Ctrl+Z)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+              >
+                <Redo2 className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>やり直す (Ctrl+Shift+Z)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <input
           type="file"
           accept=".json"

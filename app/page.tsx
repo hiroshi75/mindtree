@@ -3,7 +3,8 @@
 import { Header } from "./components/Header";
 import { TreeNode } from "./components/TreeNode";
 import { Node } from "./types/node";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useHistoryStore } from "./store/history";
 import { createTree, updateTreeName, deleteTree, getTree, getTreeNodes, getAllTrees, updateNodeParent, updateNodeOrder } from "@/app/actions/tree";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function Home() {
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [currentTreeId, setCurrentTreeId] = useState<number | undefined>();
   const [currentTreeName, setCurrentTreeName] = useState<string>("");
+  const { past, future, addToHistory, undo: undoHistory, redo: redoHistory } = useHistoryStore();
 
   // 最後に編集したツリーを自動的に表示
   useEffect(() => {
@@ -162,6 +164,18 @@ export default function Home() {
   };
 
   const handleUpdateNode = (id: string, newText: string) => {
+    const node = findNodeById(treeData, id);
+    if (node) {
+      addToHistory({
+        type: 'EDIT_NODE',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          node,
+          oldText: node.text,
+          newText
+        }
+      });
+    }
     const updateNodeById = (node: Node): Node => {
       if (node.id === id) {
         return { ...node, text: newText };
@@ -180,6 +194,17 @@ export default function Home() {
 
   const handleAddChild = (parentId: string) => {
     const newId = Date.now().toString();
+    const parentNode = findNodeById(treeData, parentId);
+    if (parentNode) {
+      addToHistory({
+        type: 'ADD_NODE',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          parentId,
+          node: { id: newId, text: "", children: [], isExpanded: true }
+        }
+      });
+    }
     const addChildById = (node: Node): Node => {
       if (node.id === parentId) {
         return {
@@ -205,6 +230,18 @@ export default function Home() {
 
   const handleAddSibling = (siblingId: string) => {
     const newId = Date.now().toString();
+    const parentNode = findParentNode(treeData, siblingId);
+    if (parentNode) {
+      addToHistory({
+        type: 'ADD_NODE',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          parentId: parentNode.id,
+          prevSiblingId: siblingId,
+          node: { id: newId, text: "", children: [], isExpanded: true }
+        }
+      });
+    }
     const addSiblingById = (node: Node): Node => {
       if (node.children) {
         const siblingIndex = node.children.findIndex(child => child.id === siblingId);
@@ -226,6 +263,18 @@ export default function Home() {
   };
 
   const handleDeleteNode = (id: string) => {
+    const node = findNodeById(treeData, id);
+    const parentNode = findParentNode(treeData, id);
+    if (node) {
+      addToHistory({
+        type: 'DELETE_NODE',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          node,
+          parentId: parentNode?.id
+        }
+      });
+    }
     const deleteNodeById = (node: Node): Node | null => {
       if (node.id === id) {
         return null;
@@ -257,6 +306,23 @@ export default function Home() {
   };
 
   const handleMoveNode = async (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => {
+    const sourceNode = findNodeById(treeData, sourceId);
+    const oldParentNode = findParentNode(treeData, sourceId);
+    if (sourceNode && oldParentNode) {
+      const oldSiblings = oldParentNode.children || [];
+      const sourceIndex = oldSiblings.findIndex(node => node.id === sourceId);
+      const oldPrevSiblingId = sourceIndex > 0 ? oldSiblings[sourceIndex - 1].id : null;
+
+      addToHistory({
+        type: 'MOVE_NODE',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          node: sourceNode,
+          oldParentId: oldParentNode.id,
+          oldPrevSiblingId
+        }
+      });
+    }
     try {
       const sourceNode = findNodeById(treeData, sourceId);
       const targetNode = findNodeById(treeData, targetId);
@@ -382,6 +448,71 @@ export default function Home() {
     return null;
   };
 
+  // Undo/Redo handlers
+  const handleUndo = useCallback(() => {
+    const action = undoHistory();
+    if (!action) return;
+
+    switch (action.type) {
+      case 'ADD_NODE':
+        handleDeleteNode(action.data.node!.id);
+        break;
+      case 'EDIT_NODE':
+        handleUpdateNode(action.data.node!.id, action.data.oldText!);
+        break;
+      case 'DELETE_NODE':
+        // 削除を元に戻す処理
+        setTreeData(prevData => {
+          const parent = findNodeById(prevData, action.data.parentId!);
+          if (parent) {
+            return {
+              ...prevData,
+              children: [...(parent.children || []), action.data.node!]
+            };
+          }
+          return prevData;
+        });
+        break;
+      case 'MOVE_NODE':
+        // 移動を元に戻す処理
+        handleMoveNode(
+          action.data.node!.id,
+          action.data.oldParentId!,
+          action.data.oldPrevSiblingId ? 'after' : 'inside'
+        );
+        break;
+    }
+  }, [undoHistory]);
+
+  const handleRedo = useCallback(() => {
+    const action = redoHistory();
+    if (!action) return;
+
+    switch (action.type) {
+      case 'ADD_NODE':
+        if (action.data.prevSiblingId) {
+          handleAddSibling(action.data.prevSiblingId);
+        } else {
+          handleAddChild(action.data.parentId!);
+        }
+        break;
+      case 'EDIT_NODE':
+        handleUpdateNode(action.data.node!.id, action.data.newText!);
+        break;
+      case 'DELETE_NODE':
+        handleDeleteNode(action.data.node!.id);
+        break;
+      case 'MOVE_NODE':
+        // 移動をやり直す処理
+        handleMoveNode(
+          action.data.node!.id,
+          action.data.parentId!,
+          'inside'
+        );
+        break;
+    }
+  }, [redoHistory]);
+
   return (
     <div>
       <Header
@@ -393,6 +524,10 @@ export default function Home() {
         onTreeCreate={handleTreeCreate}
         onTreeRename={handleTreeRename}
         onTreeDelete={handleTreeDelete}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={past.length > 0}
+        canRedo={future.length > 0}
       />
       <div className="p-4">
         <TreeNode
