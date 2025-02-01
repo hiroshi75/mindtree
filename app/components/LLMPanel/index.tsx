@@ -24,7 +24,7 @@ interface LLMPanelProps {
 }
 
 export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, treeData }: LLMPanelProps) {
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState("このノードのアイデアを膨らませてください。");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [count, setCount] = useState(3);
@@ -54,7 +54,6 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
     if (preview.length > 0 && onNodesGenerated) {
       onNodesGenerated(preview);
       setPreview([]);
-      setPrompt("");
     }
   };
 
