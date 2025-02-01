@@ -83,6 +83,8 @@ export default function Home() {
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [currentTreeId, setCurrentTreeId] = useState<number | undefined>();
   const [currentTreeName, setCurrentTreeName] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   const { past, future, addToHistory, undo: undoHistory, redo: redoHistory } = useHistoryStore();
 
   // 最後に編集したツリーを自動的に表示
@@ -527,6 +529,18 @@ export default function Home() {
         onRedo={handleRedo}
         canUndo={past.length > 0}
         canRedo={future.length > 0}
+        onSearch={(query) => {
+          setSearchQuery(query);
+          const results: string[] = [];
+          const searchNode = (node: Node) => {
+            if (node.text.toLowerCase().includes(query.toLowerCase())) {
+              results.push(node.id);
+            }
+            node.children?.forEach(searchNode);
+          };
+          searchNode(treeData);
+          setSearchResults(results);
+        }}
       />
       <div className="p-4">
         <TreeNode
@@ -540,6 +554,7 @@ export default function Home() {
           onMove={handleMoveNode}
           isSelected={treeData.id === selectedNodeId}
           selectedNodeId={selectedNodeId}
+          searchResults={searchResults}
         />
 
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

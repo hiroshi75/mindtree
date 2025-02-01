@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Menu, Undo2, Redo2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Menu, Undo2, Redo2, Search } from "lucide-react";
 import { Node } from "../types/node";
 import { useState, useRef, useEffect } from "react";
 import { getAllTrees } from "@/app/actions/tree";
@@ -19,6 +20,7 @@ interface HeaderProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onSearch: (query: string) => void;
 }
 
 interface Tree {
@@ -40,7 +42,8 @@ export function Header({
   onUndo,
   onRedo,
   canUndo,
-  canRedo
+  canRedo,
+  onSearch
 }: HeaderProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +55,7 @@ export function Header({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [treeToDelete, setTreeToDelete] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // キーボードショートカットの設定
   useEffect(() => {
@@ -70,6 +74,15 @@ export function Header({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canUndo, canRedo, onUndo, onRedo]);
+
+  // 検索処理
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      onSearch(searchQuery);
+    }, 300); // 300ms後に検索を実行（デバウンス処理）
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, onSearch]);
 
   // ツリー一覧を取得
   const fetchTrees = async () => {
@@ -204,6 +217,17 @@ export function Header({
         )}
       </div>
       <div className="flex items-center gap-2">
+        <div className="relative w-64">
+          <Input
+            type="text"
+            placeholder="検索"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        </div>
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
