@@ -2,6 +2,7 @@
 
 import { Header } from "./components/Header";
 import { TreeNode } from "./components/TreeNode";
+import { LLMPanel } from "./components/LLMPanel";
 import { Node } from "./types/node";
 import { useState, useEffect, useCallback } from "react";
 import { useHistoryStore } from "./store/history";
@@ -579,40 +580,85 @@ export default function Home() {
           setSearchResults(results);
         }}
       />
-      <div className="p-4">
-        <TreeNode
-          node={treeData}
-          treeData={treeData}
-          onUpdate={handleUpdateNode}
-          onSelect={handleSelectNode}
-          onAddChild={handleAddChild}
-          onAddSibling={handleAddSibling}
-          onDelete={handleDeleteRequest}
-          onMove={handleMoveNode}
-          isSelected={treeData.id === selectedNodeId}
-          selectedNodeId={selectedNodeId}
-          searchResults={searchResults}
-          onColorChange={handleColorChange}
-        />
+      <div className="flex">
+        <div className="flex-1 p-4">
+          <TreeNode
+            node={treeData}
+            treeData={treeData}
+            onUpdate={handleUpdateNode}
+            onSelect={handleSelectNode}
+            onAddChild={handleAddChild}
+            onAddSibling={handleAddSibling}
+            onDelete={handleDeleteRequest}
+            onMove={handleMoveNode}
+            isSelected={treeData.id === selectedNodeId}
+            selectedNodeId={selectedNodeId}
+            searchResults={searchResults}
+            onColorChange={handleColorChange}
+          />
 
-        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>ノードの削除</DialogTitle>
-              <DialogDescription>
-                このノードと、すべての子ノードが削除されます。この操作は取り消せません。
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                キャンセル
-              </Button>
-              <Button variant="destructive" onClick={() => nodeToDelete && handleDeleteNode(nodeToDelete)}>
-                削除
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>ノードの削除</DialogTitle>
+                <DialogDescription>
+                  このノードと、すべての子ノードが削除されます。この操作は取り消せません。
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                  キャンセル
+                </Button>
+                <Button variant="destructive" onClick={() => nodeToDelete && handleDeleteNode(nodeToDelete)}>
+                  削除
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="w-80 p-4">
+          <LLMPanel
+            onNodesGenerated={(nodes: string[]) => {
+              if (selectedNodeId) {
+                // 生成された各ノードを選択中のノードの子として追加
+                nodes.forEach((nodeText: string) => {
+                  const newId = Date.now().toString();
+                  const parentNode = findNodeById(treeData, selectedNodeId);
+                  if (parentNode) {
+                    addToHistory({
+                      type: 'ADD_NODE',
+                      treeId: currentTreeId?.toString() || '',
+                      data: {
+                        parentId: selectedNodeId,
+                        node: { id: newId, text: nodeText, children: [], isExpanded: true }
+                      }
+                    });
+                  }
+                  const addChildById = (node: Node): Node => {
+                    if (node.id === selectedNodeId) {
+                      return {
+                        ...node,
+                        children: [
+                          ...(node.children || []),
+                          { id: newId, text: nodeText, children: [], isExpanded: true }
+                        ]
+                      };
+                    }
+                    if (node.children) {
+                      return {
+                        ...node,
+                        children: node.children.map(addChildById)
+                      };
+                    }
+                    return node;
+                  };
+
+                  setTreeData(prevData => addChildById(prevData));
+                });
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

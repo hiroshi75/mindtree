@@ -10,10 +10,10 @@ export interface DragDropHandlers {
 
 export const createDragDropHandlers = (
   node: TreeNodeType,
-  treeData: TreeNodeType,
   setIsDragging: (value: boolean) => void,
   setIsDragOver: (value: 'before' | 'after' | 'inside' | null) => void,
   isDragOver: 'before' | 'after' | 'inside' | null,
+  treeData?: TreeNodeType,
   onMove?: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void
 ): DragDropHandlers => {
   const validateDrop = (sourceId: string, targetId: string): boolean => {
@@ -35,6 +35,7 @@ export const createDragDropHandlers = (
       return null;
     };
 
+    if (!treeData) return true;
     const sourceNode = findSourceNode(treeData);
     if (sourceNode && isDescendant(sourceNode, targetId)) {
       return false;

@@ -39,10 +39,12 @@ export function TreeNode({
     handleNodeKeyDown,
     handleEditKeyDown,
     handleTextChange,
+    handleMouseEnter,
+    handleMouseLeave,
   } = useTreeNode(
     node,
-    treeData,
     isSelected,
+    treeData,
     onUpdate,
     onAddSibling,
     onAddChild,
@@ -65,6 +67,8 @@ export function TreeNode({
       onDrop={handleDrop}
       onClick={handleClick}
       onKeyDown={handleNodeKeyDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       tabIndex={isSelected ? 0 : -1}
       role="treeitem"
       aria-selected={isSelected}
