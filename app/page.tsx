@@ -83,7 +83,6 @@ export default function Home() {
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
   const [currentTreeId, setCurrentTreeId] = useState<number | undefined>();
   const [currentTreeName, setCurrentTreeName] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const { past, future, addToHistory, undo: undoHistory, redo: redoHistory } = useHistoryStore();
 
@@ -307,6 +306,35 @@ export default function Home() {
     setDeleteDialogOpen(true);
   };
 
+  const handleColorChange = (id: string, color: string | null) => {
+    const node = findNodeById(treeData, id);
+    if (node) {
+      addToHistory({
+        type: 'CHANGE_COLOR',
+        treeId: currentTreeId?.toString() || '',
+        data: {
+          node,
+          oldColor: node.backgroundColor || null,
+          newColor: color
+        }
+      });
+    }
+    const updateNodeColor = (node: Node): Node => {
+      if (node.id === id) {
+        return { ...node, backgroundColor: color };
+      }
+      if (node.children) {
+        return {
+          ...node,
+          children: node.children.map(updateNodeColor)
+        };
+      }
+      return node;
+    };
+
+    setTreeData(prevData => updateNodeColor(prevData));
+  };
+
   const handleMoveNode = async (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => {
     const sourceNode = findNodeById(treeData, sourceId);
     const oldParentNode = findParentNode(treeData, sourceId);
@@ -376,48 +404,50 @@ export default function Home() {
 
       // UIを更新
       const moveNodeInTree = (node: Node): Node => {
-        // 移動元ノードを削除
-        if (node.children) {
-          node = {
-            ...node,
-            children: node.children.filter(child => child.id !== sourceId)
+        let updatedNode = { ...node };
+
+        // sourceNodeを深いコピーで複製
+        const deepCloneNode = (node: Node): Node => ({
+          ...node,
+          children: node.children ? node.children.map(deepCloneNode) : []
+        });
+
+        const clonedSourceNode = sourceNode ? deepCloneNode(sourceNode) : null;
+
+        // 移動元のノードを削除
+        if (updatedNode.children) {
+          updatedNode = {
+            ...updatedNode,
+            children: updatedNode.children
+              .filter(child => child.id !== sourceId)
+              .map(moveNodeInTree)
           };
         }
 
         // 移動先の処理
-        if (node.id === targetId) {
-          if (position === 'inside') {
+        if (clonedSourceNode) {
+          if (position === 'inside' && node.id === targetId) {
             // 子として追加
-            return {
-              ...node,
-              children: [...(node.children || []), sourceNode]
+            updatedNode = {
+              ...updatedNode,
+              children: [...(updatedNode.children || []), clonedSourceNode]
             };
-          } else if (position === 'before') {
-            // 前に追加
-            const parent = findParentNode(treeData, targetId);
-            if (parent && parent.children) {
-              const index = parent.children.findIndex(child => child.id === targetId);
-              parent.children.splice(index, 0, sourceNode);
-            }
-          } else if (position === 'after') {
-            // 後に追加
-            const parent = findParentNode(treeData, targetId);
-            if (parent && parent.children) {
-              const index = parent.children.findIndex(child => child.id === targetId);
-              parent.children.splice(index + 1, 0, sourceNode);
+          } else if ((position === 'before' || position === 'after') && node.id === findParentNode(treeData, targetId)?.id) {
+            // 前後に追加
+            const newChildren = [...(updatedNode.children || [])];
+            const targetIndex = newChildren.findIndex(child => child.id === targetId);
+            if (targetIndex !== -1) {
+              const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+              newChildren.splice(insertIndex, 0, clonedSourceNode);
+              updatedNode = {
+                ...updatedNode,
+                children: newChildren
+              };
             }
           }
         }
 
-        // 子ノードを再帰的に処理
-        if (node.children) {
-          return {
-            ...node,
-            children: node.children.map(moveNodeInTree)
-          };
-        }
-
-        return node;
+        return updatedNode;
       };
 
       setTreeData(prevData => moveNodeInTree(prevData));
@@ -483,6 +513,10 @@ export default function Home() {
           action.data.oldPrevSiblingId ? 'after' : 'inside'
         );
         break;
+      case 'CHANGE_COLOR':
+        // 色変更を元に戻す処理
+        handleColorChange(action.data.node!.id, action.data.oldColor || null);
+        break;
     }
   }, [undoHistory]);
 
@@ -512,6 +546,10 @@ export default function Home() {
           'inside'
         );
         break;
+      case 'CHANGE_COLOR':
+        // 色変更をやり直す処理
+        handleColorChange(action.data.node!.id, action.data.newColor || null);
+        break;
     }
   }, [redoHistory]);
 
@@ -530,7 +568,6 @@ export default function Home() {
         canUndo={past.length > 0}
         canRedo={future.length > 0}
         onSearch={(query) => {
-          setSearchQuery(query);
           const results: string[] = [];
           const searchNode = (node: Node) => {
             if (node.text.toLowerCase().includes(query.toLowerCase())) {
@@ -555,6 +592,7 @@ export default function Home() {
           isSelected={treeData.id === selectedNodeId}
           selectedNodeId={selectedNodeId}
           searchResults={searchResults}
+          onColorChange={handleColorChange}
         />
 
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

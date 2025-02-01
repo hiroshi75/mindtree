@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Node } from '../types/node'
 
 type HistoryAction = {
-  type: 'ADD_NODE' | 'EDIT_NODE' | 'DELETE_NODE' | 'MOVE_NODE'
+  type: 'ADD_NODE' | 'EDIT_NODE' | 'DELETE_NODE' | 'MOVE_NODE' | 'CHANGE_COLOR'
   treeId: string
   data: {
     node?: Node
@@ -12,6 +12,8 @@ type HistoryAction = {
     newText?: string
     oldParentId?: string
     oldPrevSiblingId?: string | null
+    oldColor?: string | null
+    newColor?: string | null
   }
 }
 
