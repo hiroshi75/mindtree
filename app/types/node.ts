@@ -1,7 +1,7 @@
 export interface Node {
   id: string;
   text: string;
-  children: Node[];
+  children?: Node[];
   isExpanded: boolean;
   backgroundColor?: string;
 }

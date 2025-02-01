@@ -4,6 +4,7 @@ import { Node as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { updateNodeText } from "@/app/actions/tree";
 
 interface TreeNodeProps {
   node: TreeNodeType;
@@ -28,12 +29,18 @@ export function TreeNode({
   onSelect,
   onDelete
 }: TreeNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(node.isExpanded);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
   const [isHovered, setIsHovered] = useState(false);
+
+  // isExpandedの更新
+  useEffect(() => {
+    setIsExpanded(node.isExpanded);
+  }, [node.isExpanded]);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const hasChildren = node.children && node.children.length > 0;
 
   // 新規ノード作成時の処理
@@ -54,6 +61,15 @@ export function TreeNode({
       nodeRef.current.focus();
     }
   }, [isSelected, isEditing, node.text]);
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // キーボードイベントハンドラ
   const handleNodeKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -78,6 +94,25 @@ export function TreeNode({
         onAddSibling(node.id);
       }
     }
+  };
+
+  // テキスト変更時のデバウンス保存
+  const handleTextChange = (text: string) => {
+    setEditText(text);
+
+    // 既存のタイマーをクリア
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // 新しいタイマーをセット（500ms後に保存）
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await updateNodeText(Number(node.id), text);
+      } catch (error) {
+        console.error('Failed to save node text:', error);
+      }
+    }, 500);
   };
 
   // 編集モード時のキーボードイベントハンドラ
@@ -175,7 +210,7 @@ export function TreeNode({
                 ref={inputRef}
                 type="text"
                 value={editText}
-                onChange={(e) => setEditText(e.target.value)}
+                onChange={(e) => handleTextChange(e.target.value)}
                 onKeyDown={handleEditKeyDown}
                 onBlur={() => {
                   setIsEditing(false);

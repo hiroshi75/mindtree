@@ -43,6 +43,9 @@ function buildNodeTree(nodes: DbNode[]): Node[] {
       } else {
         const parentNode = nodeMap.get(dbNode.parent_id);
         if (parentNode) {
+          if (!parentNode.children) {
+            parentNode.children = [];
+          }
           parentNode.children.push(node);
         }
       }
