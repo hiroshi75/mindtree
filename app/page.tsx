@@ -4,7 +4,7 @@ import { Header } from "./components/Header";
 import { TreeNode } from "./components/TreeNode";
 import { Node } from "./types/node";
 import { useState, useEffect } from "react";
-import { createTree, updateTreeName, deleteTree, getTree, getTreeNodes, getAllTrees } from "@/app/actions/tree";
+import { createTree, updateTreeName, deleteTree, getTree, getTreeNodes, getAllTrees, updateNodeParent, updateNodeOrder } from "@/app/actions/tree";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -256,6 +256,90 @@ export default function Home() {
     setDeleteDialogOpen(true);
   };
 
+  const handleMoveNode = async (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => {
+    try {
+      const sourceNode = findNodeById(treeData, sourceId);
+      const targetNode = findNodeById(treeData, targetId);
+
+      if (!sourceNode || !targetNode) return;
+
+      // 新しい親ノードIDを決定
+      let newParentId: number | null = null;
+      let newOrderIndex: number = 0;
+
+      if (position === 'inside') {
+        // 対象ノードの子として移動
+        newParentId = Number(targetId);
+        newOrderIndex = targetNode.children?.length || 0;
+      } else {
+        // 対象ノードの前後に移動
+        const targetParentNode = findParentNode(treeData, targetId);
+        if (targetParentNode) {
+          newParentId = Number(targetParentNode.id);
+          const siblings = targetParentNode.children || [];
+          const targetIndex = siblings.findIndex(node => node.id === targetId);
+          newOrderIndex = position === 'before' ? targetIndex : targetIndex + 1;
+        } else {
+          // ルートレベルでの移動
+          newOrderIndex = position === 'before' ? 0 : 1;
+        }
+      }
+
+      // データベースを更新
+      await updateNodeParent(Number(sourceId), newParentId);
+      await updateNodeOrder(Number(sourceId), newOrderIndex);
+
+      // UIを更新
+      const moveNodeInTree = (node: Node): Node => {
+        if (node.id === targetId) {
+          if (position === 'inside') {
+            return {
+              ...node,
+              children: [...(node.children || []), { ...sourceNode, children: [] }]
+            };
+          }
+        }
+        if (node.children) {
+          return {
+            ...node,
+            children: node.children
+              .filter(child => child.id !== sourceId)
+              .map(moveNodeInTree)
+          };
+        }
+        return node;
+      };
+
+      setTreeData(prevData => moveNodeInTree(prevData));
+    } catch (error) {
+      console.error('Failed to move node:', error);
+    }
+  };
+
+  // ノードを検索するヘルパー関数
+  const findNodeById = (node: Node, id: string): Node | null => {
+    if (node.id === id) return node;
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findNodeById(child, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // 親ノードを検索するヘルパー関数
+  const findParentNode = (node: Node, childId: string): Node | null => {
+    if (node.children) {
+      if (node.children.some(child => child.id === childId)) return node;
+      for (const child of node.children) {
+        const found = findParentNode(child, childId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   return (
     <div>
       <Header
@@ -276,6 +360,7 @@ export default function Home() {
           onAddChild={handleAddChild}
           onAddSibling={handleAddSibling}
           onDelete={handleDeleteRequest}
+          onMove={handleMoveNode}
           isSelected={treeData.id === selectedNodeId}
           selectedNodeId={selectedNodeId}
         />

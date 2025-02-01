@@ -2,7 +2,7 @@
 
 import { Node as TreeNodeType } from "../types/node";
 import { Card } from "@/components/ui/card";
-import { useState, useRef, KeyboardEvent, useEffect } from "react";
+import React, { useState, useRef, KeyboardEvent, DragEvent } from "react";
 import { Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import { updateNodeText } from "@/app/actions/tree";
 
@@ -16,6 +16,7 @@ interface TreeNodeProps {
   onAddChild?: (id: string) => void;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onMove?: (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => void;
 }
 
 export function TreeNode({
@@ -27,24 +28,38 @@ export function TreeNode({
   onAddSibling,
   onAddChild,
   onSelect,
-  onDelete
+  onDelete,
+  onMove
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(node.isExpanded);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(node.text);
   const [isHovered, setIsHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState<'before' | 'after' | 'inside' | null>(null);
 
-  // isExpandedの更新
-  useEffect(() => {
-    setIsExpanded(node.isExpanded);
-  }, [node.isExpanded]);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const hasChildren = node.children && node.children.length > 0;
 
+  // isExpandedの更新
+  React.useEffect(function useUpdateExpanded() {
+    setIsExpanded(node.isExpanded);
+  }, [node.isExpanded]);
+
+  // ドラッグ&ドロップ中のスクロール処理
+  React.useEffect(function useHandleScroll() {
+    if (isDragOver) {
+      const element = nodeRef.current;
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [isDragOver]);
+
   // 新規ノード作成時の処理
-  useEffect(() => {
+  React.useEffect(function useHandleNewNode() {
     if (node.text === '' && isSelected) {
       setIsEditing(true);
       setEditText('');
@@ -56,20 +71,101 @@ export function TreeNode({
   }, [node.text, isSelected, selectedNodeId]);
 
   // 選択状態が変更されたときの処理
-  useEffect(() => {
+  React.useEffect(function useHandleSelection() {
     if (isSelected && !isEditing && nodeRef.current && node.text !== '') {
       nodeRef.current.focus();
     }
   }, [isSelected, isEditing, node.text]);
 
   // クリーンアップ
-  useEffect(() => {
-    return () => {
+  React.useEffect(function useCleanup() {
+    return function cleanup() {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
   }, []);
+
+  // ドラッグ開始時の処理
+  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', node.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  // ドラッグ終了時の処理
+  const handleDragEnd = (e: DragEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setIsDragging(false);
+    setIsDragOver(null);
+  };
+
+  // ドラッグオーバー時の処理
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseY = e.clientY;
+    const threshold = 5; // ピクセル単位での閾値
+
+    // マウス位置に基づいてドロップ位置を決定
+    const relativeY = mouseY - rect.top;
+
+    if (relativeY < threshold) {
+      setIsDragOver('before');
+    } else if (relativeY > rect.height - threshold) {
+      setIsDragOver('after');
+    } else {
+      setIsDragOver('inside');
+    }
+  };
+
+  // ドラッグリーブ時の処理
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(null);
+  };
+
+  // ドロップ時の処理
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (sourceId === node.id) return; // 自分自身へのドロップは無視
+
+    // 親子関係のバリデーション
+    const isValidDrop = validateDrop(sourceId, node.id);
+    if (!isValidDrop) return;
+
+    if (onMove) {
+      onMove(sourceId, node.id, isDragOver || 'inside');
+    }
+
+    setIsDragOver(null);
+  };
+
+  // ドロップ位置のバリデーション
+  const validateDrop = (sourceId: string, targetId: string): boolean => {
+    // 自分自身の子孫ノードへのドロップを防ぐ
+    const isDescendant = (parent: TreeNodeType, childId: string): boolean => {
+      if (parent.id === childId) return true;
+      return parent.children?.some(child => isDescendant(child, childId)) || false;
+    };
+
+    // 自分自身へのドロップを防ぐ
+    if (sourceId === targetId) return false;
+
+    // 自分の子孫ノードへのドロップを防ぐ
+    if (node.children?.some(child => isDescendant(child, sourceId))) {
+      return false;
+    }
+
+    return true;
+  };
 
   // キーボードイベントハンドラ
   const handleNodeKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -168,7 +264,13 @@ export function TreeNode({
   return (
     <div
       ref={nodeRef}
-      className="my-2 outline-none"
+      className={`my-2 outline-none ${isDragging ? 'opacity-50' : ''}`}
+      draggable={!isEditing}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={handleClick}
       onKeyDown={handleNodeKeyDown}
       tabIndex={isSelected ? 0 : -1}
@@ -177,7 +279,10 @@ export function TreeNode({
       aria-expanded={hasChildren ? isExpanded : undefined}
     >
       <div
-        className="flex items-center gap-1"
+        className={`flex items-center gap-1 relative ${isDragOver === 'before' ? 'before:absolute before:left-0 before:right-0 before:top-0 before:h-0.5 before:bg-primary' :
+          isDragOver === 'after' ? 'after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5 after:bg-primary' :
+            isDragOver === 'inside' ? 'ring-2 ring-primary ring-inset' : ''
+          }`}
         style={{ marginLeft: `${level * 2}rem` }}
       >
         {hasChildren && (
@@ -256,6 +361,7 @@ export function TreeNode({
             onDelete={onDelete}
             selectedNodeId={selectedNodeId}
             isSelected={child.id === selectedNodeId}
+            onMove={onMove}
           />
         ))}
       </div>
