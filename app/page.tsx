@@ -555,33 +555,35 @@ export default function Home() {
   }, [redoHistory]);
 
   return (
-    <div>
-      <Header
-        treeData={treeData}
-        onImport={setTreeData}
-        currentTreeName={currentTreeName}
-        onTreeSelect={handleTreeSelect}
-        onTreeCreate={handleTreeCreate}
-        onTreeRename={handleTreeRename}
-        onTreeDelete={handleTreeDelete}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={past.length > 0}
-        canRedo={future.length > 0}
-        onSearch={(query) => {
-          const results: string[] = [];
-          const searchNode = (node: Node) => {
-            if (node.text.toLowerCase().includes(query.toLowerCase())) {
-              results.push(node.id);
-            }
-            node.children?.forEach(searchNode);
-          };
-          searchNode(treeData);
-          setSearchResults(results);
-        }}
-      />
-      <div className="flex items-start">
-        <div className="flex-1 p-4">
+    <div className="flex flex-col h-screen">
+      <div className="h-16">
+        <Header
+          treeData={treeData}
+          onImport={setTreeData}
+          currentTreeName={currentTreeName}
+          onTreeSelect={handleTreeSelect}
+          onTreeCreate={handleTreeCreate}
+          onTreeRename={handleTreeRename}
+          onTreeDelete={handleTreeDelete}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={past.length > 0}
+          canRedo={future.length > 0}
+          onSearch={(query) => {
+            const results: string[] = [];
+            const searchNode = (node: Node) => {
+              if (node.text.toLowerCase().includes(query.toLowerCase())) {
+                results.push(node.id);
+              }
+              node.children?.forEach(searchNode);
+            };
+            searchNode(treeData);
+            setSearchResults(results);
+          }}
+        />
+      </div>
+      <div className="flex">
+        <div className="flex-1 h-[calc(100vh-64px)] p-4 overflow-y-auto">
           <TreeNode
             node={treeData}
             treeData={treeData}
@@ -616,7 +618,7 @@ export default function Home() {
             </DialogContent>
           </Dialog>
         </div>
-        <div className="w-64">
+        <div className="w-64 h-[calc(100vh-64px)] overflow-y-auto">
           <LLMPanel
             selectedNodeId={selectedNodeId}
             selectedNodeText={selectedNodeId ? findNodeById(treeData, selectedNodeId)?.text : undefined}

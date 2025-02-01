@@ -27,15 +27,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <header className="border-b">
-          <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-            <h1 className="text-xl font-bold">MindTree</h1>
-            <div className="flex items-center space-x-4">
-              {/* ツールバーは後で実装 */}
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 container mx-auto px-4 py-6">
+        <main className="flex-1">
           {children}
         </main>
       </body>
