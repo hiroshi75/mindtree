@@ -5,8 +5,8 @@ import { createKeyboardHandlers } from "../components/TreeNode/KeyboardHandlers"
 
 export function useTreeNode(
   node: TreeNodeType,
-  treeData: TreeNodeType,
   isSelected: boolean,
+  treeData?: TreeNodeType,
   onUpdate?: (id: string, text: string) => void,
   onAddSibling?: (id: string) => void,
   onAddChild?: (id: string) => void,
@@ -19,6 +19,7 @@ export function useTreeNode(
   const [editText, setEditText] = React.useState(node.text);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isDragOver, setIsDragOver] = React.useState<'before' | 'after' | 'inside' | null>(null);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -66,10 +67,10 @@ export function useTreeNode(
 
   const dragDropHandlers = createDragDropHandlers(
     node,
-    treeData,
     setIsDragging,
     setIsDragOver,
     isDragOver,
+    treeData,
     onMove
   );
 
@@ -131,6 +132,9 @@ export function useTreeNode(
     }
   };
 
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => setIsHovered(false);
+
   return {
     isExpanded,
     setIsExpanded,
@@ -140,10 +144,13 @@ export function useTreeNode(
     setEditText,
     isDragging,
     isDragOver,
+    isHovered,
     inputRef,
     nodeRef,
     handleClick,
     handleTextClick,
+    handleMouseEnter,
+    handleMouseLeave,
     ...dragDropHandlers,
     ...keyboardHandlers,
   };
