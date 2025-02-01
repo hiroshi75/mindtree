@@ -289,24 +289,66 @@ export default function Home() {
       await updateNodeParent(Number(sourceId), newParentId);
       await updateNodeOrder(Number(sourceId), newOrderIndex);
 
-      // UIを更新
-      const moveNodeInTree = (node: Node): Node => {
-        if (node.id === targetId) {
-          if (position === 'inside') {
-            return {
-              ...node,
-              children: [...(node.children || []), { ...sourceNode, children: [] }]
-            };
+      // 子孫ノードの順序を更新
+      const updateDescendantOrders = async (node: Node, startOrder: number): Promise<number> => {
+        let currentOrder = startOrder;
+        if (node.children) {
+          for (const child of node.children) {
+            await updateNodeOrder(Number(child.id), currentOrder);
+            currentOrder = await updateDescendantOrders(child, currentOrder + 1);
           }
         }
+        return currentOrder;
+      };
+
+      // 移動したノードの子孫の順序を更新
+      if (sourceNode.children && sourceNode.children.length > 0) {
+        await updateDescendantOrders(sourceNode, newOrderIndex + 1);
+      }
+
+      // UIを更新
+      const moveNodeInTree = (node: Node): Node => {
+        // 移動元ノードを削除
+        if (node.children) {
+          node = {
+            ...node,
+            children: node.children.filter(child => child.id !== sourceId)
+          };
+        }
+
+        // 移動先の処理
+        if (node.id === targetId) {
+          if (position === 'inside') {
+            // 子として追加
+            return {
+              ...node,
+              children: [...(node.children || []), sourceNode]
+            };
+          } else if (position === 'before') {
+            // 前に追加
+            const parent = findParentNode(treeData, targetId);
+            if (parent && parent.children) {
+              const index = parent.children.findIndex(child => child.id === targetId);
+              parent.children.splice(index, 0, sourceNode);
+            }
+          } else if (position === 'after') {
+            // 後に追加
+            const parent = findParentNode(treeData, targetId);
+            if (parent && parent.children) {
+              const index = parent.children.findIndex(child => child.id === targetId);
+              parent.children.splice(index + 1, 0, sourceNode);
+            }
+          }
+        }
+
+        // 子ノードを再帰的に処理
         if (node.children) {
           return {
             ...node,
-            children: node.children
-              .filter(child => child.id !== sourceId)
-              .map(moveNodeInTree)
+            children: node.children.map(moveNodeInTree)
           };
         }
+
         return node;
       };
 
@@ -355,6 +397,7 @@ export default function Home() {
       <div className="p-4">
         <TreeNode
           node={treeData}
+          treeData={treeData}
           onUpdate={handleUpdateNode}
           onSelect={handleSelectNode}
           onAddChild={handleAddChild}
