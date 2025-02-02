@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Node as TreeNodeType } from "../types/node";
 import { createDragDropHandlers } from "../components/TreeNode/DragDropHandlers";
-import { createKeyboardHandlers } from "../components/TreeNode/KeyboardHandlers";
+import { onKeyDown } from "../components/TreeNode/KeyboardHandlers";
 
 export function useTreeNode(
   node: TreeNodeType,
@@ -20,6 +20,7 @@ export function useTreeNode(
   const [isDragging, setIsDragging] = React.useState(false);
   const [isDragOver, setIsDragOver] = React.useState<'before' | 'after' | 'inside' | null>(null);
   const [isHovered, setIsHovered] = React.useState(false);
+  // Removed childNodes and setChildNodes as they are not used.
 
   const inputRef = React.useRef<HTMLInputElement>(null);
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -74,49 +75,55 @@ export function useTreeNode(
     onMove
   );
 
-  const keyboardHandlers = createKeyboardHandlers(
-    node.id,
-    node.text,
-    isSelected,
-    setEditText,
-    setIsEditing,
-    saveTimeoutRef,
-    onUpdate,
-    onAddSibling,
-    onAddChild,
-    onDelete,
-    onSelect
-  );
-
-  // 編集内容を保存する共通関数
-  const saveCurrentEdit = () => {
-    if (isEditing) {
-      if (editText !== node.text) {
-        onUpdate?.(node.id, editText);
+  const keyboardHandlers = {
+    onKeyDown: (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        if (onAddChild) {
+          console.log("onAddChild called with", node.id);
+          onAddChild(node.id);
+        }
       }
-      setIsEditing(false);
-    }
-    // 選択状態を解除（編集状態に関係なく）
-    if (isSelected) {
-      onSelect?.(null);
+    },
+    handleNodeKeyDown: (event: React.KeyboardEvent) => {
+      onKeyDown(event);
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        if (onAddChild) {
+          console.log("onAddChild called with", node.id);
+          onAddChild(node.id);
+        }
+      }
+    },
+    handleEditKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLSpanElement>) => {
+      console.log("handleEditKeyDown called with", event);
+      const target = event.currentTarget as HTMLInputElement;
+      setEditText(target.value);
+    },
+    handleTextChange: (text: string) => {
+      console.log("handleTextChange called with", text);
+      setEditText(text);
     }
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    console.log('[useTreeNode] handleClick', {
+      nodeId: node.id,
+      isEditing,
+      isSelected
+    });
     e.stopPropagation();
     if (!isEditing) {
-      // 編集状態でない場合のみ、他のノードの編集内容を保存
-      saveCurrentEdit();
       onSelect?.(node.id);
     }
   };
 
   const handleTextClick = (e: React.MouseEvent) => {
+    console.log('[useTreeNode] handleTextClick', {
+      nodeId: node.id,
+      isEditing,
+      isSelected
+    });
     e.stopPropagation();
-
     if (!isEditing) {
-      // 編集状態でない場合は、編集状態に入り全選択する
-      saveCurrentEdit(); // 他のノードの編集内容を保存
       onSelect?.(node.id);
       setIsEditing(true);
       setEditText(node.text);
@@ -126,9 +133,6 @@ export function useTreeNode(
           inputRef.current.select();
         }
       }, 0);
-    } else {
-      // 編集状態の場合は、選択状態のみ維持
-      onSelect?.(node.id);
     }
   };
 
