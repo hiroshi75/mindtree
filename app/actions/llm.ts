@@ -9,7 +9,7 @@ import { z } from "zod";
 import { createContextPrompt } from "../utils/treeUtils";
 
 const NodeSchema = z.object({
-  nodes: z.array(z.string().describe("マインドマップのノードの内容"))
+  nodes: z.array(z.string().describe("マインドマップのノードの内容（日本語）"))
     .describe("生成されたノードの配列")
 });
 
@@ -37,7 +37,7 @@ export async function generateNodes(request: LLMRequest): Promise<LLMResponse> {
     const template = ChatPromptTemplate.fromMessages([
       ["system", `あなたはマインドマップの作成を支援するAIアシスタントです。
 与えられたトピックに関連する${count}個のノードを生成してください。
-各ノードは簡潔で具体的な内容にしてください。
+各ノードは日本語で書かれた簡潔で具体的な内容にしてください。
 出力は配列形式で、各要素が1つのノードを表します。
 
 ${contextPrompt}`],
