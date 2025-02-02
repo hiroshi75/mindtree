@@ -49,6 +49,11 @@ export function NodeContent({
             type="text"
             value={editText}
             onChange={(e) => onTextChange(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              if ((e.key === 'Enter' || e.key === 'Tab') && !e.currentTarget.value.trim()) {
+                e.preventDefault();
+              }
+            }}
             className="flex-1 bg-transparent outline-none"
             autoFocus
           />

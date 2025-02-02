@@ -35,7 +35,7 @@ export const handleDeleteEvent = (event: TreeKeyboardEvent) => {
 export const onKeyDown = (event: TreeKeyboardEvent) => {
   switch (event.key) {
     case 'Tab':
-      handleEnterEvent(event);
+      handleTabEvent(event);
       break;
     case 'Enter':
       handleEnterEvent(event);
