@@ -6,79 +6,32 @@ import { LLMPanel } from "./components/LLMPanel";
 import { Node } from "./types/node";
 import { useState, useEffect, useCallback } from "react";
 import { useHistoryStore } from "./store/history";
-import { createTree, updateTreeName, deleteTree, getTree, getTreeNodes, getAllTrees, updateNodeParent, updateNodeOrder } from "@/app/actions/tree";
+import {
+  createTree,
+  updateTreeName,
+  deleteTree,
+  getTree,
+  getTreeNodes,
+  getAllTrees,
+  updateNodeParent,
+  updateNodeOrder,
+  updateNodeText,
+  createNode,
+  deleteNode,
+  updateNodeColor
+} from "@/app/actions/tree";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-const initialData: Node = {
-  id: "1",
-  text: "プロジェクト計画",
+const emptyNode: Node = {
+  id: "0",
+  text: "新規ツリー",
   isExpanded: true,
-  children: [
-    {
-      id: "2",
-      text: "要件定義",
-      isExpanded: true,
-      children: [
-        {
-          id: "3",
-          text: "機能要件",
-          children: [],
-          isExpanded: true
-        },
-        {
-          id: "4",
-          text: "非機能要件",
-          children: [],
-          isExpanded: true
-        }
-      ]
-    },
-    {
-      id: "5",
-      text: "設計",
-      isExpanded: true,
-      children: [
-        {
-          id: "6",
-          text: "UI設計",
-          backgroundColor: "#e6f3ff",
-          children: [],
-          isExpanded: true
-        },
-        {
-          id: "7",
-          text: "データベース設計",
-          backgroundColor: "#fff3e6",
-          children: [],
-          isExpanded: true
-        }
-      ]
-    },
-    {
-      id: "8",
-      text: "開発",
-      isExpanded: true,
-      children: [
-        {
-          id: "9",
-          text: "フロントエンド",
-          children: [],
-          isExpanded: true
-        },
-        {
-          id: "10",
-          text: "バックエンド",
-          children: [],
-          isExpanded: true
-        }
-      ]
-    }
-  ]
+  children: []
 };
 
 export default function Home() {
-  const [treeData, setTreeData] = useState<Node>(initialData);
+  const [treeData, setTreeData] = useState<Node>(emptyNode);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
@@ -87,23 +40,23 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const { past, future, addToHistory, undo: undoHistory, redo: redoHistory } = useHistoryStore();
 
-  // 最後に編集したツリーを自動的に表示
+  // DBからデータを読み込む
   useEffect(() => {
-    const loadLastAccessedTree = async () => {
+    const loadTreeData = async () => {
       try {
         const trees = await getAllTrees();
         if (trees.length > 0) {
           // 最後にアクセスした時刻でソート
-          const lastTree = trees.sort((a: { last_accessed_at: string }, b: { last_accessed_at: string }) =>
+          const lastTree = trees.sort((a, b) =>
             new Date(b.last_accessed_at).getTime() - new Date(a.last_accessed_at).getTime()
           )[0];
           await handleTreeSelect(lastTree.id);
         }
       } catch (error) {
-        console.error('Failed to load last accessed tree:', error);
+        console.error('Failed to load tree data:', error);
       }
     };
-    loadLastAccessedTree();
+    loadTreeData();
   }, []);
 
   // ツリーの選択
@@ -127,6 +80,7 @@ export default function Home() {
   const handleTreeCreate = async (name: string) => {
     try {
       const id = await createTree(name);
+      await createNode(id, null, "新規ツリー", 0);
       setCurrentTreeId(id);
       setCurrentTreeName(name);
       await handleTreeSelect(id);
@@ -154,7 +108,7 @@ export default function Home() {
       if (id === currentTreeId) {
         setCurrentTreeId(undefined);
         setCurrentTreeName("");
-        setTreeData(initialData);
+        setTreeData(emptyNode);
       }
     } catch (error) {
       console.error('Failed to delete tree:', error);
@@ -165,7 +119,7 @@ export default function Home() {
     setSelectedNodeId(id);
   };
 
-  const handleUpdateNode = (id: string, newText: string) => {
+  const handleUpdateNode = async (id: string, newText: string) => {
     const node = findNodeById(treeData, id);
     if (node) {
       addToHistory({
@@ -177,129 +131,196 @@ export default function Home() {
           newText
         }
       });
-    }
-    const updateNodeById = (node: Node): Node => {
-      if (node.id === id) {
-        return { ...node, text: newText };
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children.map(updateNodeById)
-        };
-      }
-      return node;
-    };
 
-    setTreeData(prevData => updateNodeById(prevData));
+      try {
+        // データベースを更新
+        await updateNodeText(Number(id), newText);
+
+        // UIを更新
+        const updateNodeById = (node: Node): Node => {
+          if (node.id === id) {
+            return { ...node, text: newText };
+          }
+          if (node.children) {
+            return {
+              ...node,
+              children: node.children.map(updateNodeById)
+            };
+          }
+          return node;
+        };
+
+        setTreeData(prevData => updateNodeById(prevData));
+      } catch (error) {
+        console.error('Failed to update node text:', error);
+      }
+    }
   };
 
-  const handleAddChild = (parentId: string) => {
-    const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const parentNode = findNodeById(treeData, parentId);
-    if (parentNode) {
-      addToHistory({
-        type: 'ADD_NODE',
-        treeId: currentTreeId?.toString() || '',
-        data: {
-          parentId,
-          node: { id: newId, text: "", children: [], isExpanded: true }
-        }
-      });
-    }
-    const addChildById = (node: Node): Node => {
-      if (node.id === parentId) {
-        return {
-          ...node,
-          children: [
-            ...(node.children || []),
-            { id: newId, text: "", children: [], isExpanded: true }
-          ]
-        };
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children.map(addChildById)
-        };
-      }
-      return node;
-    };
+  const handleAddChild = async (parentId: string): Promise<string | undefined> => {
+    console.log('handleAddChild', parentId);
 
-    setTreeData(prevData => addChildById(prevData));
-    setSelectedNodeId(newId);
+    let treeId = currentTreeId;
+
+    // ツリーIDがない場合は新しいツリーを作成
+    if (!treeId) {
+      treeId = await createTree("新規ツリー");
+      setCurrentTreeId(treeId);
+      setCurrentTreeName("新規ツリー");
+
+      // ルートノードを作成
+      const rootNodeId = await createNode(treeId, null, "新規ツリー", 0);
+      const stringRootId = rootNodeId.toString();
+
+      // ツリーデータを更新
+      setTreeData({
+        id: stringRootId,
+        text: "新規ツリー",
+        children: [],
+        isExpanded: true
+      });
+
+      // 作成したルートノードを親として使用
+      parentId = stringRootId;
+    }
+
+    console.log('currentTreeId', treeId);
+
+    try {
+      const newId = await createNode(treeId, Number(parentId), "", 0);
+      const stringId = newId.toString();
+
+      const parentNode = findNodeById(treeData, parentId);
+      if (parentNode) {
+        addToHistory({
+          type: 'ADD_NODE',
+          treeId: treeId.toString(),
+          data: {
+            parentId,
+            node: { id: stringId, text: "", children: [], isExpanded: true }
+          }
+        });
+      }
+
+      const addChildById = (node: Node): Node => {
+        if (node.id === parentId) {
+          return {
+            ...node,
+            children: [
+              ...(node.children || []),
+              { id: stringId, text: "", children: [], isExpanded: true }
+            ]
+          };
+        }
+        if (node.children) {
+          return {
+            ...node,
+            children: node.children.map(addChildById)
+          };
+        }
+        return node;
+      };
+
+      setTreeData(prevData => addChildById(prevData));
+      setSelectedNodeId(stringId);
+      return stringId;
+    } catch (error) {
+      console.error('Failed to add child node:', error);
+      return undefined;
+    }
   };
 
-  const handleAddSibling = (siblingId: string) => {
-    const newId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const parentNode = findParentNode(treeData, siblingId);
-    if (parentNode) {
-      addToHistory({
-        type: 'ADD_NODE',
-        treeId: currentTreeId?.toString() || '',
-        data: {
-          parentId: parentNode.id,
-          prevSiblingId: siblingId,
-          node: { id: newId, text: "", children: [], isExpanded: true }
-        }
-      });
-    }
-    const addSiblingById = (node: Node): Node => {
-      if (node.children) {
-        const siblingIndex = node.children.findIndex(child => child.id === siblingId);
-        if (siblingIndex !== -1) {
-          const newChildren = [...node.children];
-          newChildren.splice(siblingIndex + 1, 0, { id: newId, text: "", children: [], isExpanded: true });
-          return { ...node, children: newChildren };
-        }
-        return {
-          ...node,
-          children: node.children.map(addSiblingById)
-        };
-      }
-      return node;
-    };
+  const handleAddSibling = async (siblingId: string) => {
+    if (!currentTreeId) return;
 
-    setTreeData(prevData => addSiblingById(prevData));
-    setSelectedNodeId(newId);
+    try {
+      const parentNode = findParentNode(treeData, siblingId);
+      const newId = await createNode(
+        currentTreeId,
+        parentNode ? Number(parentNode.id) : null,
+        "",
+        0
+      );
+      const stringId = newId.toString();
+
+      if (parentNode) {
+        addToHistory({
+          type: 'ADD_NODE',
+          treeId: currentTreeId.toString(),
+          data: {
+            parentId: parentNode.id,
+            prevSiblingId: siblingId,
+            node: { id: stringId, text: "", children: [], isExpanded: true }
+          }
+        });
+      }
+
+      const addSiblingById = (node: Node): Node => {
+        if (node.children) {
+          const siblingIndex = node.children.findIndex(child => child.id === siblingId);
+          if (siblingIndex !== -1) {
+            const newChildren = [...node.children];
+            newChildren.splice(siblingIndex + 1, 0, { id: stringId, text: "", children: [], isExpanded: true });
+            return { ...node, children: newChildren };
+          }
+          return {
+            ...node,
+            children: node.children.map(addSiblingById)
+          };
+        }
+        return node;
+      };
+
+      setTreeData(prevData => addSiblingById(prevData));
+      setSelectedNodeId(stringId);
+    } catch (error) {
+      console.error('Failed to add sibling node:', error);
+    }
   };
 
-  const handleDeleteNode = (id: string) => {
-    const node = findNodeById(treeData, id);
-    const parentNode = findParentNode(treeData, id);
-    if (node) {
-      addToHistory({
-        type: 'DELETE_NODE',
-        treeId: currentTreeId?.toString() || '',
-        data: {
-          node,
-          parentId: parentNode?.id
-        }
-      });
-    }
-    const deleteNodeById = (node: Node): Node | null => {
-      if (node.id === id) {
-        return null;
-      }
-      if (node.children) {
-        const newChildren = node.children
-          .map(deleteNodeById)
-          .filter((child): child is Node => child !== null);
-        return {
-          ...node,
-          children: newChildren
-        };
-      }
-      return node;
-    };
+  const handleDeleteNode = async (id: string) => {
+    try {
+      const node = findNodeById(treeData, id);
+      const parentNode = findParentNode(treeData, id);
+      if (node) {
+        addToHistory({
+          type: 'DELETE_NODE',
+          treeId: currentTreeId?.toString() || '',
+          data: {
+            node,
+            parentId: parentNode?.id
+          }
+        });
 
-    setTreeData(prevData => {
-      const result = deleteNodeById(prevData);
-      return result || initialData; // ルートノードが削除された場合は初期データに戻す
-    });
-    setSelectedNodeId(null);
-    setNodeToDelete(null);
-    setDeleteDialogOpen(false);
+        await deleteNode(Number(id));
+
+        const deleteNodeById = (node: Node): Node | null => {
+          if (node.id === id) {
+            return null;
+          }
+          if (node.children) {
+            const newChildren = node.children
+              .map(deleteNodeById)
+              .filter((child): child is Node => child !== null);
+            return {
+              ...node,
+              children: newChildren
+            };
+          }
+          return node;
+        };
+
+        setTreeData(prevData => {
+          const result = deleteNodeById(prevData);
+          return result || emptyNode;
+        });
+        setSelectedNodeId(null);
+        setNodeToDelete(null);
+        setDeleteDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to delete node:', error);
+    }
   };
 
   const handleDeleteRequest = (id: string) => {
@@ -307,151 +328,132 @@ export default function Home() {
     setDeleteDialogOpen(true);
   };
 
-  const handleColorChange = (id: string, color: string | null) => {
-    const node = findNodeById(treeData, id);
-    if (node) {
-      addToHistory({
-        type: 'CHANGE_COLOR',
-        treeId: currentTreeId?.toString() || '',
-        data: {
-          node,
-          oldColor: node.backgroundColor || null,
-          newColor: color
-        }
-      });
-    }
-    const updateNodeColor = (node: Node): Node => {
-      if (node.id === id) {
-        return { ...node, backgroundColor: color };
-      }
-      if (node.children) {
-        return {
-          ...node,
-          children: node.children.map(updateNodeColor)
-        };
-      }
-      return node;
-    };
+  const handleColorChange = async (id: string, color: string | null) => {
+    try {
+      const node = findNodeById(treeData, id);
+      if (node) {
+        addToHistory({
+          type: 'CHANGE_COLOR',
+          treeId: currentTreeId?.toString() || '',
+          data: {
+            node,
+            oldColor: node.backgroundColor || null,
+            newColor: color
+          }
+        });
 
-    setTreeData(prevData => updateNodeColor(prevData));
+        await updateNodeColor(Number(id), color);
+
+        const updateNodeColorInTree = (node: Node): Node => {
+          if (node.id === id) {
+            return { ...node, backgroundColor: color };
+          }
+          if (node.children) {
+            return {
+              ...node,
+              children: node.children.map(updateNodeColorInTree)
+            };
+          }
+          return node;
+        };
+
+        setTreeData(prevData => updateNodeColorInTree(prevData));
+      }
+    } catch (error) {
+      console.error('Failed to update node color:', error);
+    }
   };
 
   const handleMoveNode = async (sourceId: string, targetId: string, position: 'before' | 'after' | 'inside') => {
-    const sourceNode = findNodeById(treeData, sourceId);
-    const oldParentNode = findParentNode(treeData, sourceId);
-    if (sourceNode && oldParentNode) {
-      const oldSiblings = oldParentNode.children || [];
-      const sourceIndex = oldSiblings.findIndex(node => node.id === sourceId);
-      const oldPrevSiblingId = sourceIndex > 0 ? oldSiblings[sourceIndex - 1].id : null;
-
-      addToHistory({
-        type: 'MOVE_NODE',
-        treeId: currentTreeId?.toString() || '',
-        data: {
-          node: sourceNode,
-          oldParentId: oldParentNode.id,
-          oldPrevSiblingId
-        }
-      });
-    }
     try {
       const sourceNode = findNodeById(treeData, sourceId);
-      const targetNode = findNodeById(treeData, targetId);
+      const oldParentNode = findParentNode(treeData, sourceId);
+      if (sourceNode && oldParentNode) {
+        const oldSiblings = oldParentNode.children || [];
+        const sourceIndex = oldSiblings.findIndex(node => node.id === sourceId);
+        const oldPrevSiblingId = sourceIndex > 0 ? oldSiblings[sourceIndex - 1].id : null;
 
-      if (!sourceNode || !targetNode) return;
-
-      // 新しい親ノードIDを決定
-      let newParentId: number | null = null;
-      let newOrderIndex: number = 0;
-
-      if (position === 'inside') {
-        // 対象ノードの子として移動
-        newParentId = Number(targetId);
-        newOrderIndex = targetNode.children?.length || 0;
-      } else {
-        // 対象ノードの前後に移動
-        const targetParentNode = findParentNode(treeData, targetId);
-        if (targetParentNode) {
-          newParentId = Number(targetParentNode.id);
-          const siblings = targetParentNode.children || [];
-          const targetIndex = siblings.findIndex(node => node.id === targetId);
-          newOrderIndex = position === 'before' ? targetIndex : targetIndex + 1;
-        } else {
-          // ルートレベルでの移動
-          newOrderIndex = position === 'before' ? 0 : 1;
-        }
-      }
-
-      // データベースを更新
-      await updateNodeParent(Number(sourceId), newParentId);
-      await updateNodeOrder(Number(sourceId), newOrderIndex);
-
-      // 子孫ノードの順序を更新
-      const updateDescendantOrders = async (node: Node, startOrder: number): Promise<number> => {
-        let currentOrder = startOrder;
-        if (node.children) {
-          for (const child of node.children) {
-            await updateNodeOrder(Number(child.id), currentOrder);
-            currentOrder = await updateDescendantOrders(child, currentOrder + 1);
+        addToHistory({
+          type: 'MOVE_NODE',
+          treeId: currentTreeId?.toString() || '',
+          data: {
+            node: sourceNode,
+            oldParentId: oldParentNode.id,
+            oldPrevSiblingId
           }
-        }
-        return currentOrder;
-      };
-
-      // 移動したノードの子孫の順序を更新
-      if (sourceNode.children && sourceNode.children.length > 0) {
-        await updateDescendantOrders(sourceNode, newOrderIndex + 1);
-      }
-
-      // UIを更新
-      const moveNodeInTree = (node: Node): Node => {
-        let updatedNode = { ...node };
-
-        // sourceNodeを深いコピーで複製
-        const deepCloneNode = (node: Node): Node => ({
-          ...node,
-          children: node.children ? node.children.map(deepCloneNode) : []
         });
 
-        const clonedSourceNode = sourceNode ? deepCloneNode(sourceNode) : null;
+        const targetNode = findNodeById(treeData, targetId);
+        if (!sourceNode || !targetNode) return;
 
-        // 移動元のノードを削除
-        if (updatedNode.children) {
-          updatedNode = {
-            ...updatedNode,
-            children: updatedNode.children
-              .filter(child => child.id !== sourceId)
-              .map(moveNodeInTree)
-          };
-        }
+        // 新しい親ノードIDを決定
+        let newParentId: number | null = null;
+        let newOrderIndex: number = 0;
 
-        // 移動先の処理
-        if (clonedSourceNode) {
-          if (position === 'inside' && node.id === targetId) {
-            // 子として追加
-            updatedNode = {
-              ...updatedNode,
-              children: [...(updatedNode.children || []), clonedSourceNode]
-            };
-          } else if ((position === 'before' || position === 'after') && node.id === findParentNode(treeData, targetId)?.id) {
-            // 前後に追加
-            const newChildren = [...(updatedNode.children || [])];
-            const targetIndex = newChildren.findIndex(child => child.id === targetId);
-            if (targetIndex !== -1) {
-              const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
-              newChildren.splice(insertIndex, 0, clonedSourceNode);
-              updatedNode = {
-                ...updatedNode,
-                children: newChildren
-              };
-            }
+        if (position === 'inside') {
+          newParentId = Number(targetId);
+          newOrderIndex = targetNode.children?.length || 0;
+        } else {
+          const targetParentNode = findParentNode(treeData, targetId);
+          if (targetParentNode) {
+            newParentId = Number(targetParentNode.id);
+            const siblings = targetParentNode.children || [];
+            const targetIndex = siblings.findIndex(node => node.id === targetId);
+            newOrderIndex = position === 'before' ? targetIndex : targetIndex + 1;
+          } else {
+            newOrderIndex = position === 'before' ? 0 : 1;
           }
         }
 
-        return updatedNode;
-      };
+        // データベースを更新
+        await updateNodeParent(Number(sourceId), newParentId);
+        await updateNodeOrder(Number(sourceId), newOrderIndex);
 
-      setTreeData(prevData => moveNodeInTree(prevData));
+        // UIを更新
+        const moveNodeInTree = (node: Node): Node => {
+          let updatedNode = { ...node };
+
+          const deepCloneNode = (node: Node): Node => ({
+            ...node,
+            children: node.children ? node.children.map(deepCloneNode) : []
+          });
+
+          const clonedSourceNode = sourceNode ? deepCloneNode(sourceNode) : null;
+
+          if (updatedNode.children) {
+            updatedNode = {
+              ...updatedNode,
+              children: updatedNode.children
+                .filter(child => child.id !== sourceId)
+                .map(moveNodeInTree)
+            };
+          }
+
+          if (clonedSourceNode) {
+            if (position === 'inside' && node.id === targetId) {
+              updatedNode = {
+                ...updatedNode,
+                children: [...(updatedNode.children || []), clonedSourceNode]
+              };
+            } else if ((position === 'before' || position === 'after') && node.id === findParentNode(treeData, targetId)?.id) {
+              const newChildren = [...(updatedNode.children || [])];
+              const targetIndex = newChildren.findIndex(child => child.id === targetId);
+              if (targetIndex !== -1) {
+                const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+                newChildren.splice(insertIndex, 0, clonedSourceNode);
+                updatedNode = {
+                  ...updatedNode,
+                  children: newChildren
+                };
+              }
+            }
+          }
+
+          return updatedNode;
+        };
+
+        setTreeData(prevData => moveNodeInTree(prevData));
+      }
     } catch (error) {
       console.error('Failed to move node:', error);
     }
@@ -494,7 +496,6 @@ export default function Home() {
         handleUpdateNode(action.data.node!.id, action.data.oldText!);
         break;
       case 'DELETE_NODE':
-        // 削除を元に戻す処理
         setTreeData(prevData => {
           const parent = findNodeById(prevData, action.data.parentId!);
           if (parent) {
@@ -507,7 +508,6 @@ export default function Home() {
         });
         break;
       case 'MOVE_NODE':
-        // 移動を元に戻す処理
         handleMoveNode(
           action.data.node!.id,
           action.data.oldParentId!,
@@ -515,7 +515,6 @@ export default function Home() {
         );
         break;
       case 'CHANGE_COLOR':
-        // 色変更を元に戻す処理
         handleColorChange(action.data.node!.id, action.data.oldColor || null);
         break;
     }
@@ -540,7 +539,6 @@ export default function Home() {
         handleDeleteNode(action.data.node!.id);
         break;
       case 'MOVE_NODE':
-        // 移動をやり直す処理
         handleMoveNode(
           action.data.node!.id,
           action.data.parentId!,
@@ -548,7 +546,6 @@ export default function Home() {
         );
         break;
       case 'CHANGE_COLOR':
-        // 色変更をやり直す処理
         handleColorChange(action.data.node!.id, action.data.newColor || null);
         break;
     }
@@ -625,40 +622,12 @@ export default function Home() {
             treeData={treeData}
             onNodesGenerated={(nodes: string[]) => {
               if (selectedNodeId) {
-                // 生成された各ノードを選択中のノードの子として追加
-                nodes.forEach((nodeText: string, index: number) => {
-                  const newId = `${Date.now()}_${index}`;
-                  const parentNode = findNodeById(treeData, selectedNodeId);
-                  if (parentNode) {
-                    addToHistory({
-                      type: 'ADD_NODE',
-                      treeId: currentTreeId?.toString() || '',
-                      data: {
-                        parentId: selectedNodeId,
-                        node: { id: newId, text: nodeText, children: [], isExpanded: true }
-                      }
-                    });
-                  }
-                  const addChildById = (node: Node): Node => {
-                    if (node.id === selectedNodeId) {
-                      return {
-                        ...node,
-                        children: [
-                          ...(node.children || []),
-                          { id: newId, text: nodeText, children: [], isExpanded: true }
-                        ]
-                      };
+                nodes.forEach((nodeText: string) => {
+                  handleAddChild(selectedNodeId).then((newId) => {
+                    if (newId) {
+                      handleUpdateNode(newId, nodeText);
                     }
-                    if (node.children) {
-                      return {
-                        ...node,
-                        children: node.children.map(addChildById)
-                      };
-                    }
-                    return node;
-                  };
-
-                  setTreeData(prevData => addChildById(prevData));
+                  });
                 });
               }
             }}

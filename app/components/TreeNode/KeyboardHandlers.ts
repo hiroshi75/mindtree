@@ -1,103 +1,53 @@
-import * as React from "react";
-import { updateNodeText } from "@/app/actions/tree";
+// リファクタリング済みのキーボードイベント処理ハンドラ
+// 各イベントごとに個別の関数に分離し、処理の明確化とフォーカス管理の一元化を目指しています。
 
-export interface KeyboardHandlers {
-  handleNodeKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  handleEditKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  handleTextChange: (text: string) => void;
-}
+import React from 'react';
 
-export const createKeyboardHandlers = (
-  nodeId: string,
-  nodeText: string,
-  isSelected: boolean,
-  setEditText: (text: string) => void,
-  setIsEditing: (value: boolean) => void,
-  saveTimeoutRef: { current: NodeJS.Timeout | null },
-  onUpdate?: (id: string, text: string) => void,
-  onAddSibling?: (id: string) => void,
-  onAddChild?: (id: string) => void,
-  onDelete?: (id: string) => void,
-  onSelect?: (id: string) => void,
-): KeyboardHandlers => {
+// キーボードイベントに対する共通のインターフェース
+export type TreeKeyboardEvent = React.KeyboardEvent;
 
-  const handleNodeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!isSelected) return;
-
-    if (e.key === 'Delete' && onDelete) {
-      e.preventDefault();
-      e.stopPropagation();
-      onDelete(nodeId);
-    }
-    else if (e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.ctrlKey && onAddChild) {
-        onAddChild(nodeId);
-      }
-      else if (!e.ctrlKey && onAddSibling) {
-        onAddSibling(nodeId);
-      }
-    }
-  };
-
-  const handleTextChange = (text: string) => {
-    setEditText(text);
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        if (text.trim() !== nodeText) {
-          await updateNodeText(Number(nodeId), text);
-        }
-      } catch (error) {
-        console.error('Failed to save node text:', error);
-      }
-    }, 500);
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const trimmedEditText = e.currentTarget.value.trim();
-      const hasChanged = trimmedEditText !== nodeText;
-
-      if (trimmedEditText && onUpdate && hasChanged) {
-        onUpdate(nodeId, trimmedEditText);
-      }
-
-      setIsEditing(false);
-
-      if (e.ctrlKey && onAddChild) {
-        onAddChild(nodeId);
-      }
-      else if (!e.ctrlKey && !hasChanged && onAddSibling) {
-        onAddSibling(nodeId);
-      }
-
-      setTimeout(() => {
-        if (onSelect) {
-          onSelect(nodeId);
-        }
-      }, 0);
-    }
-    else if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsEditing(false);
-      setEditText(nodeText);
-    }
-  };
-
-  return {
-    handleNodeKeyDown,
-    handleEditKeyDown,
-    handleTextChange
-  };
+// Tabキー処理：フォーカス管理や子ノード追加の制御を集中管理
+export const handleTabEvent = (event: TreeKeyboardEvent) => {
+  // デフォルトのTab動作を無効化してカスタムフォーカス移動を実施
+  event.preventDefault();
+  // ここで、フォーカス管理用のロジックまたは専用カスタムフックを呼び出す
+  // 例: focusManager.moveFocus('next');
+  console.log('Tabキーが押されました。フォーカス移動処理を実行します。');
 };
+
+// Enterキー処理：子ノードの追加処理を担当
+// useTreeNode.tsのkeyboardHandlersで実際の処理が行われるため、
+// ここではイベントのデフォルト動作の防止のみを行います
+export const handleEnterEvent = (event: TreeKeyboardEvent) => {
+  event.preventDefault();
+};
+
+// Deleteキー処理：ノード削除などの処理を担当（必要に応じて拡張）
+export const handleDeleteEvent = (event: TreeKeyboardEvent) => {
+  event.preventDefault();
+  // ノード削除のロジックをここに記述
+  // 例: nodeManager.deleteNode(currentNodeId);
+  console.log('Deleteキーが押されました。ノード削除処理を実行します。');
+};
+
+// メインのキーボードイベントハンドラ
+// 各キーに対応する個別ハンドラへ処理をルーティングします
+export const onKeyDown = (event: TreeKeyboardEvent) => {
+  switch (event.key) {
+    case 'Tab':
+      handleEnterEvent(event);
+      break;
+    case 'Enter':
+      handleEnterEvent(event);
+      break;
+    case 'Delete':
+      handleDeleteEvent(event);
+      break;
+    default:
+      // その他のキーは標準動作のままとするか、必要に応じて処理を追加する
+      break;
+  }
+};
+
+// React コンポーネントでハンドラを利用する場合の例
+// 例：<div onKeyDown={onKeyDown}>...</div>

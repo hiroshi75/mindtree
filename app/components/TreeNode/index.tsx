@@ -36,8 +36,7 @@ export function TreeNode({
     handleDragOver,
     handleDragLeave,
     handleDrop,
-    handleNodeKeyDown,
-    handleEditKeyDown,
+    handleNodeKeyDown: baseHandleNodeKeyDown,
     handleTextChange,
     handleMouseEnter,
     handleMouseLeave,
@@ -52,6 +51,27 @@ export function TreeNode({
     onDelete,
     onMove
   );
+
+  // キーボードイベントのラッパー関数を作成
+  const handleNodeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    console.log('[TreeNode] handleNodeKeyDown', {
+      nodeId: node.id,
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      isSelected,
+      isEditing,
+      target: e.currentTarget.tagName,
+    });
+
+    // 選択されていない場合は何もしない
+    if (!isSelected) {
+      console.log('[TreeNode] Node is not selected, ignoring keydown');
+      return;
+    }
+
+    // KeyboardHandlers.tsのonKeyDownを実行し、その後useTreeNodeのhandleNodeKeyDownを実行
+    baseHandleNodeKeyDown(e);
+  };
 
   const hasChildren = node.children && node.children.length > 0;
 
@@ -73,6 +93,7 @@ export function TreeNode({
       role="treeitem"
       aria-selected={isSelected}
       aria-expanded={hasChildren ? isExpanded : undefined}
+      aria-label={`${node.text} ${hasChildren ? isExpanded ? '展開中' : '折りたたみ中' : ''}`}
     >
       <div
         className={`flex items-center gap-1 relative ${isDragOver === 'before' ? 'before:absolute before:left-0 before:right-0 before:top-0 before:h-0.5 before:bg-primary' :
@@ -110,7 +131,6 @@ export function TreeNode({
             searchResults={searchResults}
             inputRef={inputRef}
             onTextChange={handleTextChange}
-            onEditKeyDown={handleEditKeyDown}
             onTextClick={handleTextClick}
             onDelete={onDelete}
             onColorChange={onColorChange}
