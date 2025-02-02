@@ -39,6 +39,7 @@ export function useTreeNode(
   }, [isDragOver]);
 
   React.useEffect(() => {
+    // 空のノードが選択された時のみ編集モードを有効にする
     if (node.text === '' && isSelected) {
       setIsEditing(true);
       setEditText('');
