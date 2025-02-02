@@ -324,8 +324,14 @@ export default function Home() {
   };
 
   const handleDeleteRequest = (id: string) => {
-    setNodeToDelete(id);
-    setDeleteDialogOpen(true);
+    // 空のノードの場合は確認ダイアログを表示せずに直接削除
+    const node = findNodeById(treeData, id);
+    if (node && node.text.trim() === '') {
+      handleDeleteNode(id);
+    } else {
+      setNodeToDelete(id);
+      setDeleteDialogOpen(true);
+    }
   };
 
   const handleColorChange = async (id: string, color: string | null) => {

@@ -17,6 +17,7 @@ interface NodeContentProps {
   onTextClick: (e: React.MouseEvent) => void;
   onDelete?: (id: string) => void;
   onColorChange?: (id: string, color: string | null) => void;
+  treeData?: { id: string };
 }
 
 export function NodeContent({
@@ -32,7 +33,8 @@ export function NodeContent({
   onTextChange,
   onTextClick,
   onDelete,
-  onColorChange
+  onColorChange,
+  treeData
 }: NodeContentProps) {
 
   return (
@@ -57,6 +59,20 @@ export function NodeContent({
                   const newText = e.currentTarget.value.trim();
                   onTextChange(newText);
                   e.currentTarget.blur();
+                }
+              }
+            }}
+            onBlur={(e) => {
+              // フォーカスが外れた時の処理
+              const isRootNode = nodeId === treeData?.id.toString();
+              if (e.currentTarget.value.trim() === '') {
+                if (isRootNode) {
+                  // ルートノードの場合は「新規ツリー」というテキストを設定
+                  const defaultText = "新規ツリー";
+                  onTextChange(defaultText);
+                } else {
+                  // ルートノード以外の場合は削除
+                  onDelete?.(nodeId);
                 }
               }
             }}
