@@ -1,8 +1,7 @@
 'use server';
 
-'use server';
-
 import { ChatAnthropic } from "@langchain/anthropic";
+import { promptUtils } from "@/lib/db";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { LLMRequest, LLMResponse } from "../types/llm";
 import { z } from "zod";
@@ -12,6 +11,14 @@ const NodeSchema = z.object({
   nodes: z.array(z.string().describe("マインドマップのノードの内容（日本語）"))
     .describe("生成されたノードの配列")
 });
+
+export async function getNodePrompt(nodeId: number): Promise<string> {
+  return promptUtils.getPrompt(nodeId);
+}
+
+export async function saveNodePrompt(nodeId: number, prompt: string): Promise<void> {
+  promptUtils.upsertPrompt(nodeId, prompt);
+}
 
 export async function generateNodes(request: LLMRequest): Promise<LLMResponse> {
   try {

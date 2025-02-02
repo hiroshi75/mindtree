@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { generateNodes } from "@/app/actions/llm";
+import { generateNodes, getNodePrompt, saveNodePrompt } from "@/app/actions/llm";
 import { createContextPrompt } from "@/app/utils/treeUtils";
 import { Node } from "@/app/types/node";
 import { Eye } from "lucide-react";
@@ -24,7 +24,22 @@ interface LLMPanelProps {
 }
 
 export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, treeData }: LLMPanelProps) {
-  const [prompt, setPrompt] = useState("このノードのアイデアを膨らませてください。");
+  const [prompt, setPrompt] = useState("");
+
+  // 選択されたノードが変更されたときにプロンプトを読み込む
+  useEffect(() => {
+    if (selectedNodeId) {
+      getNodePrompt(Number(selectedNodeId)).then(setPrompt);
+    }
+  }, [selectedNodeId]);
+
+  // プロンプトが変更されたときにDBに保存
+  const handlePromptChange = async (newPrompt: string) => {
+    setPrompt(newPrompt);
+    if (selectedNodeId) {
+      await saveNodePrompt(Number(selectedNodeId), newPrompt);
+    }
+  };
   const [isGenerating, setIsGenerating] = useState(false);
   const [count, setCount] = useState(3);
   const [preview, setPreview] = useState<string[]>([]);
@@ -104,7 +119,7 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
         <textarea
           className="w-full min-h-[100px] p-2 border rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => handlePromptChange(e.target.value)}
           placeholder={selectedNodeId ? "LLMへの指示を入力してください" : "ノードを選択してください"}
           disabled={!selectedNodeId}
         />
