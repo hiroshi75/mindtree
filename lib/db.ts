@@ -49,6 +49,17 @@ function initDb(db: Database.Database) {
     )
   `);
 
+  // node_promptsテーブルの作成
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS node_prompts (
+      node_id INTEGER PRIMARY KEY,
+      prompt TEXT NOT NULL DEFAULT 'このノードのアイデアを膨らませてください',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+    )
+  `);
+
   // updated_atを自動更新するトリガーの作成
   db.exec(`
     CREATE TRIGGER IF NOT EXISTS update_trees_timestamp
@@ -110,6 +121,30 @@ export const treeUtils = {
     const db = getDb();
     const stmt = db.prepare('UPDATE trees SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = ?');
     return stmt.run(id);
+  }
+};
+
+// プロンプト操作のユーティリティ関数
+export const promptUtils = {
+  // プロンプトの取得
+  getPrompt: (nodeId: number) => {
+    const db = getDb();
+    const stmt = db.prepare('SELECT prompt FROM node_prompts WHERE node_id = ?');
+    const result = stmt.get(nodeId) as { prompt: string } | undefined;
+    return result?.prompt ?? 'このノードのアイデアを膨らませてください';
+  },
+
+  // プロンプトの更新または作成
+  upsertPrompt: (nodeId: number, prompt: string) => {
+    const db = getDb();
+    const stmt = db.prepare(`
+      INSERT INTO node_prompts (node_id, prompt) 
+      VALUES (?, ?)
+      ON CONFLICT(node_id) DO UPDATE SET 
+        prompt = excluded.prompt,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    return stmt.run(nodeId, prompt);
   }
 };
 
