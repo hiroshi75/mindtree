@@ -26,7 +26,6 @@ interface LLMPanelProps {
 export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, treeData }: LLMPanelProps) {
   const [prompt, setPrompt] = useState("このノードのアイデアを膨らませてください。");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [count, setCount] = useState(3);
   const [preview, setPreview] = useState<string[]>([]);
   const [promptPreview, setPromptPreview] = useState("");
@@ -58,7 +57,7 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="p-4 space-y-4 mt-12 mr-6">
       <div className="space-y-2 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -111,30 +110,23 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
         />
       </div>
 
-      {/* 詳細設定 */}
-      <div>
-        <button
-          className="text-sm text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() => setShowSettings(!showSettings)}
+      {/* 生成数設定 */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm font-medium">生成数</label>
+        <input
+          type="number"
+          min={1}
+          max={20}
+          value={count}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            if (value >= 1 && value <= 20) {
+              setCount(value);
+            }
+          }}
+          className="w-16 p-1 border rounded"
           disabled={!selectedNodeId}
-        >
-          詳細設定 {showSettings ? "▼" : "▶"}
-        </button>
-        {showSettings && (
-          <div className="mt-2 space-y-2">
-            <div>
-              <label className="text-sm font-medium">生成数</label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={count}
-                onChange={(e) => setCount(Number(e.target.value))}
-                className="ml-2 w-16 p-1 border rounded"
-              />
-            </div>
-          </div>
-        )}
+        />
       </div>
 
       {/* 生成ボタン */}
