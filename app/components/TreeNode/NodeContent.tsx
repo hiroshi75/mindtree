@@ -50,8 +50,14 @@ export function NodeContent({
             value={editText}
             onChange={(e) => onTextChange(e.target.value)}
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if ((e.key === 'Enter' || e.key === 'Tab') && !e.currentTarget.value.trim()) {
+              if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
+                if (e.currentTarget.value.trim()) {
+                  // 入力フィールドからフォーカスを外す前にテキストを更新
+                  const newText = e.currentTarget.value.trim();
+                  onTextChange(newText);
+                  e.currentTarget.blur();
+                }
               }
             }}
             className="flex-1 bg-transparent outline-none"
