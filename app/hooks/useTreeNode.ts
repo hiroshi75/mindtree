@@ -120,13 +120,33 @@ export function useTreeNode(
     }
   };
 
+  // ルートノードかどうかを判定（文字列型に変換して比較）
+  const isRootNode = treeData?.id.toString() === node.id;
+
   const handleClick = (e: React.MouseEvent) => {
     console.log('[useTreeNode] handleClick', {
       nodeId: node.id,
       isEditing,
-      isSelected
+      isSelected,
+      isRootNode
     });
     e.stopPropagation();
+
+    // 他のノードがクリックされた時の処理
+    if (isSelected && isEditing && editText.trim() === '') {
+      if (isRootNode) {
+        // ルートノードの場合は「新規ツリー」というテキストを設定
+        const defaultText = "新規ツリー";
+        setEditText(defaultText);
+        onUpdate?.(node.id, defaultText);
+        setIsEditing(false);
+      } else {
+        // ルートノード以外の場合は削除
+        onDelete?.(node.id);
+        return;
+      }
+    }
+
     if (!isEditing) {
       onSelect?.(node.id);
     }
@@ -136,9 +156,26 @@ export function useTreeNode(
     console.log('[useTreeNode] handleTextClick', {
       nodeId: node.id,
       isEditing,
-      isSelected
+      isSelected,
+      isRootNode
     });
     e.stopPropagation();
+
+    // 他のノードがクリックされた時の処理
+    if (isSelected && isEditing && editText.trim() === '') {
+      if (isRootNode) {
+        // ルートノードの場合は「新規ツリー」というテキストを設定
+        const defaultText = "新規ツリー";
+        setEditText(defaultText);
+        onUpdate?.(node.id, defaultText);
+        setIsEditing(false);
+      } else {
+        // ルートノード以外の場合は削除
+        onDelete?.(node.id);
+        return;
+      }
+    }
+
     if (!isEditing) {
       onSelect?.(node.id);
       setIsEditing(true);

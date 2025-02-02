@@ -134,6 +134,7 @@ export function TreeNode({
             onTextClick={handleTextClick}
             onDelete={onDelete}
             onColorChange={onColorChange}
+            treeData={treeData}
           />
         </div>
       </div>
