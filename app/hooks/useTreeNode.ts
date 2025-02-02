@@ -20,7 +20,6 @@ export function useTreeNode(
   const [isDragging, setIsDragging] = React.useState(false);
   const [isDragOver, setIsDragOver] = React.useState<'before' | 'after' | 'inside' | null>(null);
   const [isHovered, setIsHovered] = React.useState(false);
-  // Removed childNodes and setChildNodes as they are not used.
 
   const inputRef = React.useRef<HTMLInputElement>(null);
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -43,7 +42,6 @@ export function useTreeNode(
     if (node.text === '' && isSelected) {
       setIsEditing(true);
       setEditText('');
-      // 新規ノード作成時は全選択（空文字なので実質的な効果はない）
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -78,7 +76,7 @@ export function useTreeNode(
   const keyboardHandlers = {
     onKeyDown: (event: React.KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault(); // デフォルトの動作を常に防ぐ
+        event.preventDefault();
         if (editText.trim() !== '' && onAddChild) {
           console.log("onAddChild called with", node.id);
           onAddChild(node.id);
@@ -87,7 +85,7 @@ export function useTreeNode(
     },
     handleNodeKeyDown: (event: React.KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault(); // デフォルトの動作を常に防ぐ
+        event.preventDefault();
         if (editText.trim() !== '') {
           onKeyDown(event);
           if (onAddChild) {
@@ -99,12 +97,26 @@ export function useTreeNode(
     },
     handleEditKeyDown: (event: React.KeyboardEvent<HTMLInputElement | HTMLSpanElement>) => {
       console.log("handleEditKeyDown called with", event);
-      const target = event.currentTarget as HTMLInputElement;
-      setEditText(target.value);
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        const target = event.currentTarget as HTMLInputElement;
+        const newText = target.value.trim();
+        if (newText !== '') {
+          setEditText(newText);
+          onUpdate?.(node.id, newText);
+          setIsEditing(false);
+        }
+      }
     },
     handleTextChange: (text: string) => {
       console.log("handleTextChange called with", text);
-      setEditText(text);
+      // Enterキーの文字列が含まれている場合は除去
+      const cleanText = text.replace(/{Enter}$/, '');
+      setEditText(cleanText);
+      // テキスト変更時にDBを更新
+      if (cleanText.trim() !== '') {
+        onUpdate?.(node.id, cleanText);
+      }
     }
   };
 
