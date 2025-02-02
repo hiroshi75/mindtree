@@ -78,18 +78,22 @@ export function useTreeNode(
   const keyboardHandlers = {
     onKeyDown: (event: React.KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === 'Tab') {
-        if (onAddChild) {
+        event.preventDefault(); // デフォルトの動作を常に防ぐ
+        if (editText.trim() !== '' && onAddChild) {
           console.log("onAddChild called with", node.id);
           onAddChild(node.id);
         }
       }
     },
     handleNodeKeyDown: (event: React.KeyboardEvent) => {
-      onKeyDown(event);
       if (event.key === 'Enter' || event.key === 'Tab') {
-        if (onAddChild) {
-          console.log("onAddChild called with", node.id);
-          onAddChild(node.id);
+        event.preventDefault(); // デフォルトの動作を常に防ぐ
+        if (editText.trim() !== '') {
+          onKeyDown(event);
+          if (onAddChild) {
+            console.log("onAddChild called with", node.id);
+            onAddChild(node.id);
+          }
         }
       }
     },
