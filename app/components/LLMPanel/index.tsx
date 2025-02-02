@@ -57,7 +57,7 @@ export function LLMPanel({ onNodesGenerated, selectedNodeId, selectedNodeText, t
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="p-4 space-y-4 mt-12 mr-6">
       <div className="space-y-2 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
