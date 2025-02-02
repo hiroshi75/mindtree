@@ -581,20 +581,28 @@ export default function Home() {
       </div>
       <div className="flex">
         <div className="flex-1 h-[calc(100vh-64px)] p-4 overflow-y-auto">
-          <TreeNode
-            node={treeData}
-            treeData={treeData}
-            onUpdate={handleUpdateNode}
-            onSelect={handleSelectNode}
-            onAddChild={handleAddChild}
-            onAddSibling={handleAddSibling}
-            onDelete={handleDeleteRequest}
-            onMove={handleMoveNode}
-            isSelected={treeData.id === selectedNodeId}
-            selectedNodeId={selectedNodeId}
-            searchResults={searchResults}
-            onColorChange={handleColorChange}
-          />
+          {currentTreeId ? (
+            <TreeNode
+              node={treeData}
+              treeData={treeData}
+              onUpdate={handleUpdateNode}
+              onSelect={handleSelectNode}
+              onAddChild={handleAddChild}
+              onAddSibling={handleAddSibling}
+              onDelete={handleDeleteRequest}
+              onMove={handleMoveNode}
+              isSelected={treeData.id === selectedNodeId}
+              selectedNodeId={selectedNodeId}
+              searchResults={searchResults}
+              onColorChange={handleColorChange}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-gray-500">
+                <p className="text-lg">ツリー一覧から新規ツリーを作成してください</p>
+              </div>
+            </div>
+          )}
 
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogContent>
